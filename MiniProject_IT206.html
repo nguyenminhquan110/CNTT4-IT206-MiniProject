@@ -1,0 +1,2372 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PitchHub 88 - Hệ Thống Đặt Sân & Thuê Lính Đánh Thuê Thể Thao</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #printableInvoice, #printableInvoice * { visibility: visible; }
+      #printableInvoice { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-emerald-700 text-white shadow-lg sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('booking')">
+        <div class="bg-white text-emerald-700 p-2 rounded-full w-10 h-10 flex items-center justify-center font-bold text-xl shadow">
+          <i class="fa-solid fa-futbol"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-black tracking-wide flex items-center gap-2">
+            PitchHub 88 <span class="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full font-medium border border-emerald-400">Pro</span>
+          </h1>
+          <p class="text-xs text-emerald-200">Đặt sân • Chống trùng lịch • Thuê Lính Đánh Thuê • Ghép kèo</p>
+        </div>
+      </div>
+      
+      <!-- Navigation Tabs -->
+      <nav class="flex bg-emerald-800/80 p-1 rounded-xl text-sm font-medium flex-wrap justify-center gap-1">
+        <button id="tabBtnBooking" onclick="switchTab('booking')" class="px-3.5 py-2 rounded-lg transition-all bg-white text-emerald-800 shadow font-bold">
+          <i class="fa-solid fa-calendar-plus mr-1.5"></i>Đặt Sân Mới
+        </button>
+        <button id="tabBtnRinger" onclick="switchTab('ringer')" class="px-3.5 py-2 rounded-lg transition-all text-emerald-100 hover:text-white">
+          <i class="fa-solid fa-user-ninja mr-1.5"></i>Bơm Đều / Đánh Thuê (<span id="ringerBadge">0</span>)
+        </button>
+        <button id="tabBtnMatchmaking" onclick="switchTab('matchmaking')" class="px-3.5 py-2 rounded-lg transition-all text-emerald-100 hover:text-white">
+          <i class="fa-solid fa-users-rectangle mr-1.5"></i>Chợ Ghép Kèo (<span id="matchBadge">0</span>)
+        </button>
+        <button id="tabBtnHighlights" onclick="switchTab('highlights')" class="px-3.5 py-2 rounded-lg transition-all text-emerald-100 hover:text-white">
+          <i class="fa-solid fa-video mr-1.5"></i>Camera Sân & Tự Cắt
+        </button>
+        <button id="tabBtnList" onclick="switchTab('list')" class="px-3.5 py-2 rounded-lg transition-all text-emerald-100 hover:text-white">
+          <i class="fa-solid fa-list-check mr-1.5"></i>Danh Sách Đặt (<span id="countBadge">0</span>)
+        </button>
+        <button id="tabBtnStats" onclick="switchTab('stats')" class="px-3.5 py-2 rounded-lg transition-all text-emerald-100 hover:text-white">
+          <i class="fa-solid fa-chart-line mr-1.5"></i>Thống Kê
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+
+    <!-- Weather & Flash Sale Banner -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <div id="weatherWidget" class="md:col-span-8 bg-gradient-to-r from-sky-500 to-emerald-600 text-white p-4 rounded-2xl shadow-sm flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div id="weatherIcon" class="text-3xl"><i class="fa-solid fa-sun text-amber-300"></i></div>
+          <div>
+            <h4 id="weatherText" class="font-bold text-sm sm:text-base">Thời tiết lý tưởng cho môn thể thao ngoài trời!</h4>
+            <p id="weatherSub" class="text-xs text-sky-100">Cơ sở Mỹ Đình, Hà Nội: 26°C • Độ ẩm 65% • Tỷ lệ mưa 10% (Bảo hiểm dời lịch 100%)</p>
+          </div>
+        </div>
+        <button onclick="checkWeather()" class="hidden sm:flex px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-semibold backdrop-blur items-center gap-1 transition">
+          <i class="fa-solid fa-rotate"></i> Cập nhật
+        </button>
+      </div>
+
+      <div class="md:col-span-4 bg-gradient-to-r from-indigo-600 to-violet-700 text-white p-4 rounded-2xl shadow-sm flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="text-2xl text-amber-300"><i class="fa-solid fa-user-ninja animate-bounce"></i></div>
+          <div>
+            <h4 class="font-bold text-sm">Thiếu Người Sát Giờ?</h4>
+            <p class="text-xs text-indigo-100">Gọi ngay Thủ môn / Tay vợt lấp chỗ trống trong 5 phút!</p>
+          </div>
+        </div>
+        <button onclick="switchTab('ringer')" class="px-3 py-1.5 bg-white text-indigo-700 font-bold rounded-lg text-xs shadow hover:bg-indigo-50 transition whitespace-nowrap">
+          Tìm ngay
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 1: ĐẶT SÂN MỚI -->
+    <section id="tabBooking" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Form Input (7 cols) -->
+      <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-xl font-bold mb-6 text-slate-800 border-b border-slate-100 pb-3 flex items-center justify-between">
+          <span class="flex items-center"><i class="fa-solid fa-pen-to-square text-emerald-600 mr-2"></i>Thông Tin Đặt Sân</span>
+          <span class="text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full font-semibold border border-emerald-200">
+            <i class="fa-solid fa-shield-check mr-1"></i>Tự động khóa khung giờ đã đặt
+          </span>
+        </h2>
+
+        <form id="bookingForm" onsubmit="handleFormSubmit(event)" class="space-y-5">
+          <!-- Thông tin khách hàng -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tên đại diện / Đội bóng <span class="text-red-500">*</span></label>
+              <input type="text" id="customerName" required placeholder="Nhập tên đại diện..." class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Số điện thoại <span class="text-red-500">*</span></label>
+              <input type="tel" id="customerPhone" required placeholder="0987654321" pattern="[0-9]{10}" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+            </div>
+          </div>
+
+          <!-- Môn thể thao & Cơ sở -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Môn thể thao <span class="text-red-500">*</span></label>
+              <select id="sportCategory" onchange="handleSportChange()" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white font-bold text-emerald-800">
+                <option value="football" selected>⚽ Bóng Đá</option>
+                <option value="pickleball">🏓 Pickleball</option>
+                <option value="badminton">🏸 Cầu Lông</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Cơ sở / Địa điểm <span class="text-red-500">*</span></label>
+              <select id="pitchLocation" onchange="updatePitchOptions()" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white font-medium text-slate-700">
+                <option value="Cơ sở 1: Mỹ Đình (Lê Đức Thọ, Nam Từ Liêm)" selected>Cơ sở 1: Mỹ Đình (Nam Từ Liêm)</option>
+                <option value="Cơ sở 2: Thanh Xuân (Khuất Duy Tiến, Thanh Xuân)">Cơ sở 2: Thanh Xuân (Khuất Duy Tiến)</option>
+                <option value="Cơ sở 3: Cầu Giấy (Trần Thái Tông, Cầu Giấy)">Cơ sở 3: Cầu Giấy (Trần Thái Tông)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Loại sân & Sân cụ thể -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Phân loại sân <span class="text-red-500">*</span></label>
+              <select id="pitchType" onchange="updatePitchOptions()" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white">
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Chọn sân <span class="text-red-500">*</span></label>
+              <select id="pitchSelect" onchange="syncAvailabilityUI()" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white font-semibold">
+              </select>
+            </div>
+          </div>
+
+          <!-- Ngày & Khung giờ -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Ngày bắt đầu đá/tập <span class="text-red-500">*</span></label>
+              <input type="date" id="bookingDate" required onchange="syncAvailabilityUI()" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Khung giờ <span class="text-red-500">*</span></label>
+              <select id="timeSlot" onchange="syncAvailabilityUI()" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white font-medium">
+              </select>
+            </div>
+          </div>
+
+          <!-- ĐẶT LỊCH CỐ ĐỊNH HÀNG THÁNG (RECURRING MONTHLY BOOKING) -->
+          <div class="p-4 bg-amber-50/90 rounded-xl border border-amber-300 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <label class="flex items-center cursor-pointer">
+                <input type="checkbox" id="enableRecurring" onchange="toggleRecurringFields()" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
+                <span class="ml-2 text-sm font-bold text-amber-950 flex items-center gap-1.5">
+                  <i class="fa-solid fa-calendar-check text-amber-600"></i> Đặt Lịch Cố Định Hàng Tháng (Khách Ruột VIP)
+                </span>
+              </label>
+              <span class="text-[11px] font-bold bg-amber-500 text-white px-2.5 py-0.5 rounded-full shadow-sm">
+                Giảm ngay 10% trọn gói
+              </span>
+            </div>
+
+            <div id="recurringFields" class="hidden pt-3 border-t border-amber-200/80 space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-amber-900 mb-1">Chu kỳ lặp lại hàng tuần</label>
+                  <select id="recurringWeeks" onchange="syncAvailabilityUI()" class="w-full px-3 py-2 rounded-lg border border-amber-300 text-xs bg-white font-bold text-slate-800">
+                    <option value="4" selected>1 Tháng (4 tuần liên tiếp — Giảm 10%)</option>
+                    <option value="8">2 Tháng (8 tuần liên tiếp — Giảm 12%)</option>
+                    <option value="12">3 Tháng / 1 Quý (12 tuần — Giảm 15%)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-amber-900 mb-1">Thứ cố định trong tuần</label>
+                  <div id="recurringWeekdayDisplay" class="px-3 py-2 rounded-lg border border-amber-200 bg-white text-xs font-bold text-emerald-700">
+                    Tự động theo ngày bắt đầu
+                  </div>
+                </div>
+              </div>
+
+              <!-- Danh sách các ngày sẽ tự động khóa lịch -->
+              <div class="bg-white p-3 rounded-lg border border-amber-200 space-y-1.5">
+                <div class="text-[11px] font-bold text-slate-600 flex items-center justify-between">
+                  <span><i class="fa-solid fa-list-ol text-amber-600 mr-1"></i> Lịch các buổi sẽ khóa sân cố định:</span>
+                  <span id="recurringConflictStatus" class="text-emerald-600 font-bold">Tất cả đều trống</span>
+                </div>
+                <div id="recurringDatesPreview" class="flex flex-wrap gap-1.5 pt-1">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SƠ ĐỒ TÌNH TRẠNG KHUNG GIỜ TRỰC QUAN (LIVE SLOT AVAILABILITY) -->
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-table-cells text-emerald-600"></i> Tình trạng lịch sân trong ngày:
+              </span>
+              <div class="flex items-center gap-3 text-[11px]">
+                <span class="flex items-center gap-1 text-emerald-700 font-semibold"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block"></span> Còn trống</span>
+                <span class="flex items-center gap-1 text-red-600 font-semibold"><span class="w-2.5 h-2.5 rounded-sm bg-red-500 inline-block"></span> Đã có đội đặt</span>
+              </div>
+            </div>
+            <div id="slotVisualGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            </div>
+            <div id="conflictAlertBox" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-semibold flex items-center gap-2">
+              <i class="fa-solid fa-circle-exclamation text-base text-red-600"></i>
+              <span id="conflictAlertText">Khung giờ này đã có đội đặt! Vui lòng chọn giờ hoặc sân khác.</span>
+            </div>
+          </div>
+
+          <!-- Dịch vụ đi kèm -->
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-2">Dịch vụ bổ sung & Camera Sân</label>
+            <div id="servicesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            </div>
+          </div>
+
+          <!-- BƠM ĐỀU / THUÊ LÍNH ĐÁNH THUÊ (RINGER FINDER) -->
+          <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+            <label class="flex items-center cursor-pointer">
+              <input type="checkbox" id="enableRinger" onchange="toggleRingerFields()" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+              <span class="ml-2 text-sm font-bold text-indigo-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-user-ninja text-indigo-600"></i> Bơm Đều / Thuê Lính Đánh Thuê (Thiếu người lấp slot gấp)
+              </span>
+            </label>
+            
+            <div id="ringerFields" class="hidden mt-3 pt-3 border-t border-indigo-200 space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-indigo-900">Vị trí cần tìm</label>
+                  <select id="ringerPosition" class="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-indigo-300 text-xs bg-white font-semibold">
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-indigo-900">Số lượng cần</label>
+                  <input type="number" id="ringerCount" value="1" min="1" max="10" class="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-indigo-300 text-xs bg-white font-bold">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-indigo-900">Quyền lợi / Thù lao</label>
+                  <select id="ringerPerk" class="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-indigo-300 text-xs bg-white font-semibold text-emerald-700">
+                    <option value="Miễn phí 100% tiền sân + Nước">Miễn phí 100% sân + Nước</option>
+                    <option value="Trả công 100.000đ + Bao nước">Trả công 100k + Bao nước</option>
+                    <option value="Trả công 150.000đ (Bắt gôn cứng)">Trả công 150k (Bắt gôn cứng)</option>
+                    <option value="Giảm 50% tiền sân giao lưu">Giảm 50% tiền sân giao lưu</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ghép kèo & Tuyển đối -->
+          <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+            <label class="flex items-center cursor-pointer">
+              <input type="checkbox" id="enableMatchmaking" onchange="toggleMatchmakingFields()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+              <span class="ml-2 text-sm font-bold text-emerald-900">Đăng tin ghép đối cả đội (Tìm đội giao lưu)</span>
+            </label>
+            
+            <div id="matchmakingFields" class="hidden mt-3 pt-3 border-t border-emerald-200 space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-emerald-800">Trình độ mong muốn</label>
+                  <select id="matchSkill" class="w-full mt-1 px-3 py-1.5 rounded-lg border border-emerald-300 text-xs bg-white">
+                    <option value="Vui vẻ / Mới chơi">Vui vẻ / Mới chơi</option>
+                    <option value="Trung bình / Bán chuyên" selected>Trung bình / Bán chuyên</option>
+                    <option value="Chuyên nghiệp / Căng thẳng">Chuyên nghiệp / Căng thẳng</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-emerald-800">Tỷ lệ chia tiền sân</label>
+                  <select id="matchSplitRatio" class="w-full mt-1 px-3 py-1.5 rounded-lg border border-emerald-300 text-xs bg-white">
+                    <option value="Chia đôi 50 - 50" selected>Chia đôi 50 - 50</option>
+                    <option value="Đội thua trả 60 - 40">Đội thua trả 60 - 40</option>
+                    <option value="Giao lưu 100% tài trợ">Giao lưu (Miễn phí cho đối)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ghi chú -->
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Ghi chú thêm</label>
+            <textarea id="bookingNote" rows="2" placeholder="Yêu cầu thêm về bóng, trọng tài, chuẩn bị nước đá..." class="w-full px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"></textarea>
+          </div>
+
+          <button type="submit" id="submitBookingBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-all flex items-center justify-center text-base">
+            <i class="fa-solid fa-check-circle mr-2"></i> Xác Nhận Đặt Sân & Tạo Hóa Đơn
+          </button>
+        </form>
+      </div>
+
+      <!-- Live Receipt Summary (5 cols) -->
+      <div class="lg:col-span-5">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-20 space-y-5">
+          <h2 class="text-xl font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center justify-between">
+            <span class="flex items-center"><i class="fa-solid fa-receipt text-emerald-600 mr-2"></i>Chi Tiết Thanh Toán</span>
+            <span id="summarySportBadge" class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">⚽ Bóng Đá</span>
+          </h2>
+
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between py-1 text-slate-600">
+              <span>Giá sân gốc (1 buổi 90'):</span>
+              <span id="summaryBasePrice" class="font-medium">0 VNĐ</span>
+            </div>
+            <div class="flex justify-between py-1 text-slate-600">
+              <span>Hệ số khung giờ:</span>
+              <span id="summaryTimeRate" class="font-medium text-emerald-600">1.0x</span>
+            </div>
+            <div class="flex justify-between py-1 text-slate-600">
+              <span>Phụ phí dịch vụ (mỗi buổi):</span>
+              <span id="summaryServiceFee" class="font-medium">0 VNĐ</span>
+            </div>
+            <div id="summaryRecurringRow" class="hidden flex justify-between py-1 text-amber-800 font-bold bg-amber-50 px-2.5 rounded-lg border border-amber-200">
+              <span id="summaryRecurringLabel">Gói cố định (4 tuần):</span>
+              <span id="summaryRecurringDiscount" class="text-emerald-700">-10%</span>
+            </div>
+
+            <div class="border-t border-dashed border-slate-200 pt-3 mt-3">
+              <div class="flex justify-between items-baseline mb-2">
+                <span class="text-base font-bold text-slate-800">Tổng phí thanh toán:</span>
+                <span id="summaryTotalPrice" class="text-2xl font-black text-emerald-700">0 VNĐ</span>
+              </div>
+              <div class="flex justify-between text-xs bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-amber-800">
+                <span>Đặt cọc giữ sân (30%):</span>
+                <span id="summaryDeposit" class="font-bold">0 VNĐ</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Feature Highlight Badges -->
+          <div class="grid grid-cols-2 gap-2 text-xs pt-2">
+            <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 text-slate-600 flex items-center gap-1.5">
+              <i class="fa-solid fa-lock text-emerald-600"></i> Khóa lịch chống trùng
+            </div>
+            <div class="p-2 bg-amber-50 rounded-lg border border-amber-200 text-amber-800 font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-calendar-check text-amber-600"></i> Cố định tháng VIP
+            </div>
+            <div class="p-2 bg-indigo-50 rounded-lg border border-indigo-200 text-indigo-700 font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-user-ninja text-indigo-600"></i> Thuê lính đánh thuê
+            </div>
+            <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 text-slate-600 flex items-center gap-1.5">
+              <i class="fa-solid fa-video text-rose-600"></i> Camera Sân & Tự Cắt
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500 space-y-1">
+            <p class="font-semibold text-slate-700"><i class="fa-solid fa-circle-info mr-1 text-emerald-600"></i> Mẹo hay cho đội trưởng:</p>
+            <p>• Chọn <strong>"Đặt Lịch Cố Định Hàng Tháng"</strong> để giữ trọn khung giờ đẹp 4–12 tuần liên tiếp và nhận chiết khấu đến <strong>15%</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: SÀN BƠM ĐỀU & THUÊ LÍNH ĐÁNH THUÊ (RINGER MARKETPLACE) -->
+    <section id="tabRinger" class="hidden space-y-6">
+      <div class="bg-gradient-to-r from-indigo-900 via-violet-900 to-slate-900 text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4 border border-indigo-500/30">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 text-xs font-bold mb-2 border border-indigo-400/30">
+            <i class="fa-solid fa-bolt text-amber-400"></i> Lấp Chỗ Trống Sát Giờ Trong 5 Phút
+          </div>
+          <h2 class="text-2xl font-black flex items-center gap-2">
+            <i class="fa-solid fa-user-ninja text-amber-400"></i> Sàn Bơm Đều & Lính Đánh Thuê (Ringer Finder)
+          </h2>
+          <p class="text-indigo-200 text-sm mt-1">Các đội đang thiếu gấp Thủ môn, Tiền đạo hoặc Tay vợt đánh đôi — Nhận slot ngay để hưởng ưu đãi miễn phí sân hoặc nhận thù lao!</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="openQuickRingerModal()" class="px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold rounded-xl text-sm transition shadow flex items-center gap-2">
+            <i class="fa-solid fa-bullhorn"></i> Đăng Tin Cần Người Gấp
+          </button>
+          <button onclick="openFreelancerModal()" class="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white font-bold rounded-xl text-sm transition border border-white/20 flex items-center gap-2">
+            <i class="fa-solid fa-id-badge"></i> Đăng Ký Làm Lính Đánh Thuê
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Môn thể thao trên sàn Ringer -->
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2 text-xs font-bold text-slate-600">
+          <i class="fa-solid fa-filter text-indigo-600"></i> Lọc kèo cần người:
+          <button onclick="filterRingerSport('ALL')" id="ringerFilterALL" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white">Tất cả</button>
+          <button onclick="filterRingerSport('football')" id="ringerFilterfootball" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">⚽ Bóng Đá</button>
+          <button onclick="filterRingerSport('pickleball')" id="ringerFilterpickleball" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">🏓 Pickleball</button>
+          <button onclick="filterRingerSport('badminton')" id="ringerFilterbadminton" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">🏸 Cầu Lông</button>
+        </div>
+        <span class="text-xs text-slate-500">Bấm <strong>"Nhận Slot Đánh Thuê"</strong> để chốt chỗ trực tiếp với đội trưởng</span>
+      </div>
+
+      <!-- Danh sách kèo đang tuyển người gấp -->
+      <div id="ringerListGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      </div>
+
+      <!-- Danh sách Lính đánh thuê (Freelancers) sẵn sàng nhận kèo -->
+      <div class="pt-4 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-fire text-orange-500"></i> Danh Sách "Lính Đánh Thuê" Uy Tín Đang Sẵn Sàng Ra Sân
+          </h3>
+          <span class="text-xs text-indigo-700 font-bold bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200">Gọi trực tiếp hoặc mời vào trận</span>
+        </div>
+        <div id="freelancerListGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: CHỢ GHÉP KÈO & TÌM ĐỐI -->
+    <section id="tabMatchmaking" class="hidden space-y-6">
+      <div class="bg-gradient-to-r from-emerald-800 to-teal-900 text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+          <h2 class="text-2xl font-black flex items-center gap-2">
+            <i class="fa-solid fa-users-viewfinder text-amber-400"></i> Sàn Ghép Kèo & Tìm Đội Giao Lưu
+          </h2>
+          <p class="text-emerald-200 text-sm mt-1">Tìm đội giao lưu cả team nhanh chóng cho các trận tối nay!</p>
+        </div>
+        <button onclick="switchTab('booking')" class="px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold rounded-xl text-sm transition shadow flex items-center gap-2">
+          <i class="fa-solid fa-plus-circle"></i> Đăng Kèo Mới
+        </button>
+      </div>
+
+      <div id="matchmakingListGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      </div>
+    </section>
+
+    <!-- TAB 4: TRUY CẬP CAMERA SÂN & TỰ CẮT CLIP THỦ CÔNG -->
+    <section id="tabHighlights" class="hidden space-y-6">
+      <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4 border border-emerald-500/30">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold mb-2 border border-emerald-500/30">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Truy Cập Trực Tiếp Hệ Thống Camera 4K Của Sân Đã Đặt
+          </div>
+          <h2 class="text-2xl font-black flex items-center gap-2">
+            <i class="fa-solid fa-scissors text-amber-400"></i> Trình Xem Camera Sân & Tự Cắt Highlight
+          </h2>
+          <p class="text-slate-300 text-sm mt-1">Chọn đúng trận đấu của bạn, tua đến phút ghi bàn, tự chọn mốc thời gian (Start – End) để cắt chính xác đoạn video bạn muốn!</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur px-4 py-2.5 rounded-xl border border-white/15 text-xs space-y-1">
+          <p class="text-amber-300 font-bold"><i class="fa-solid fa-key mr-1"></i> Quyền riêng tư trận đấu</p>
+          <p class="text-slate-200">Chỉ đội đặt sân có Mã Đặt (ID) mới mở khóa được Camera khung giờ đó.</p>
+        </div>
+      </div>
+
+      <!-- KHU VỰC STUDIO TỰ CẮT VIDEO TỪ CAMERA SÂN -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-slate-50 p-4 border-b border-slate-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 flex-1">
+            <label class="text-xs font-bold text-slate-700 whitespace-nowrap"><i class="fa-solid fa-camera text-emerald-600 mr-1"></i> Chọn Trận / Camera Sân:</label>
+            <select id="camBookingSelect" onchange="loadCameraSession()" class="flex-1 max-w-md px-3 py-2 rounded-lg border border-slate-300 bg-white text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500">
+            </select>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="font-bold text-slate-600">Góc máy:</span>
+            <button onclick="switchCamAngle(this, 'CAM 1: Toàn Cảnh Sân (4K Wide)')" class="cam-angle-btn px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold transition">Cam 1: Toàn cảnh</button>
+            <button onclick="switchCamAngle(this, 'CAM 2: Cận Cảnh Cầu Môn / Lưới')" class="cam-angle-btn px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 font-semibold transition">Cam 2: Cận cảnh</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
+          <!-- Màn hình phát lại toàn bộ trận đấu 90 phút (7 cols) -->
+          <div class="lg:col-span-7 space-y-4">
+            <div class="relative aspect-video bg-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-inner flex flex-col justify-between p-4 text-white">
+              <img id="camFeedImg" src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1000&auto=format&fit=crop&q=80" class="absolute inset-0 w-full h-full object-cover opacity-55">
+              
+              <div class="relative z-10 flex justify-between items-start">
+                <div class="bg-black/75 backdrop-blur px-3 py-1.5 rounded-lg text-xs font-mono border border-white/10">
+                  <div class="flex items-center gap-2 text-emerald-400 font-bold">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> <span id="camAngleLabel">CAM 1: Toàn Cảnh Sân (4K Wide)</span>
+                  </div>
+                  <div id="camSessionMeta" class="text-[11px] text-slate-300 mt-0.5">Sân 7A (Chuẩn VFF) • 19:00-20:30</div>
+                </div>
+                <div class="bg-black/75 px-2.5 py-1 rounded text-xs font-mono font-bold text-amber-400 border border-amber-500/30">
+                  REC • 90:00 FULL MATCH
+                </div>
+              </div>
+
+              <div class="relative z-10 my-auto text-center space-y-1">
+                <div class="inline-block bg-black/70 backdrop-blur px-4 py-2 rounded-xl border border-white/15">
+                  <p class="text-[11px] text-slate-300 uppercase tracking-wider">Đang xem tại mốc thời gian trận đấu</p>
+                  <p id="currentPlayheadDisplay" class="text-2xl sm:text-3xl font-mono font-black text-white">24:15</p>
+                </div>
+              </div>
+
+              <div class="relative z-10 space-y-1.5 bg-black/75 backdrop-blur p-3 rounded-xl border border-white/10">
+                <div class="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>00:00 (Bắt đầu)</span>
+                  <span class="text-amber-400 font-bold">Vùng chọn cắt: <span id="timelineRangeLabel">24:05 → 24:30</span></span>
+                  <span>90:00 (Hết giờ)</span>
+                </div>
+                <div class="relative w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+                  <div id="trimHighlightBar" class="absolute top-0 bottom-0 bg-amber-400 rounded-full" style="left: 26%; width: 6%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-bold text-slate-700"><i class="fa-solid fa-forward-fast text-emerald-600 mr-1"></i> Tua nhanh đến phút muốn xem (0 - 90 phút):</span>
+                <span id="scrubMinuteLabel" class="font-mono font-bold text-emerald-700">Phút 24:15</span>
+              </div>
+              <input type="range" id="matchScrubber" min="0" max="5400" value="1455" oninput="handleMatchScrub(this.value)" class="w-full accent-emerald-600 cursor-pointer">
+            </div>
+          </div>
+
+          <!-- Bảng điều khiển Tự Cắt Clip (5 cols) -->
+          <div class="lg:col-span-5 bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col justify-between space-y-4">
+            <div class="space-y-4">
+              <div class="border-b border-slate-200 pb-3">
+                <h3 class="font-black text-slate-800 text-base flex items-center gap-2">
+                  <i class="fa-solid fa-scissors text-rose-600"></i> Thiết Lập Đoạn Video Muốn Cắt
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Tự nhập hoặc bấm nút lấy mốc giây bắt đầu và kết thúc trên video</p>
+              </div>
+
+              <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex justify-between items-center">
+                  <label class="text-xs font-bold text-slate-700">1. Điểm Bắt Đầu (Start)</label>
+                  <button type="button" onclick="setTrimPointFromPlayhead('start')" class="text-[11px] bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold px-2 py-0.5 rounded transition">
+                    <i class="fa-solid fa-location-crosshairs mr-1"></i> Lấy mốc đang xem
+                  </button>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="trimStartMin" value="24" min="0" max="89" oninput="updateTrimPreview()" class="w-20 px-2.5 py-1.5 border rounded-lg text-center font-mono font-bold text-sm">
+                  <span class="font-bold text-slate-500">phút</span>
+                  <input type="number" id="trimStartSec" value="05" min="0" max="59" oninput="updateTrimPreview()" class="w-20 px-2.5 py-1.5 border rounded-lg text-center font-mono font-bold text-sm">
+                  <span class="font-bold text-slate-500">giây</span>
+                </div>
+              </div>
+
+              <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex justify-between items-center">
+                  <label class="text-xs font-bold text-slate-700">2. Điểm Kết Thúc (End)</label>
+                  <button type="button" onclick="setTrimPointFromPlayhead('end')" class="text-[11px] bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold px-2 py-0.5 rounded transition">
+                    <i class="fa-solid fa-location-crosshairs mr-1"></i> Lấy mốc đang xem
+                  </button>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="trimEndMin" value="24" min="0" max="90" oninput="updateTrimPreview()" class="w-20 px-2.5 py-1.5 border rounded-lg text-center font-mono font-bold text-sm">
+                  <span class="font-bold text-slate-500">phút</span>
+                  <input type="number" id="trimEndSec" value="30" min="0" max="59" oninput="updateTrimPreview()" class="w-20 px-2.5 py-1.5 border rounded-lg text-center font-mono font-bold text-sm">
+                  <span class="font-bold text-slate-500">giây</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">3. Đặt tên cho đoạn video của bạn</label>
+                <input type="text" id="customClipTitle" placeholder="VD: Cú sút xa cháy lưới của Anh Quân..." value="Pha ghi bàn đẹp mắt phút 24" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-medium">
+              </div>
+
+              <div class="flex items-center justify-between text-xs bg-amber-50 border border-amber-200 p-2.5 rounded-lg text-amber-900">
+                <span>Độ dài đoạn cắt: <strong id="trimDurationDisplay" class="font-mono text-sm">25 giây</strong></span>
+                <select id="clipAspectRatio" class="bg-white border border-amber-300 rounded px-2 py-1 font-bold text-xs">
+                  <option value="16:9 Ngang (YouTube/FB)">16:9 Ngang gốc</option>
+                  <option value="9:16 Dọc (TikTok/Reels)">9:16 Dọc TikTok</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="button" onclick="exportCustomCutClip()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm">
+              <i class="fa-solid fa-scissors"></i> Cắt & Xuất Đoạn Video Này
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Danh sách các đoạn video bạn đã tự cắt -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-folder-open text-emerald-600"></i> Kho Video Bạn Đã Tự Cắt Từ Camera Sân
+          </h3>
+          <span class="text-xs text-slate-500">Lưu trữ miễn phí 7 ngày • Tải về không giới hạn</span>
+        </div>
+        <div id="highlightsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: DANH SÁCH LỊCH ĐẶT -->
+    <section id="tabList" class="hidden space-y-6">
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center">
+        <div class="relative w-full md:w-80">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+          <input type="text" id="searchInput" oninput="renderBookingList()" placeholder="Tìm theo tên hoặc SĐT..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+        </div>
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div class="flex items-center space-x-2">
+            <label class="text-xs font-bold text-slate-500 whitespace-nowrap">Môn:</label>
+            <select id="filterSport" onchange="renderBookingList()" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
+              <option value="ALL">Tất cả môn</option>
+              <option value="football">Bóng Đá</option>
+              <option value="pickleball">Pickleball</option>
+              <option value="badminton">Cầu Lông</option>
+            </select>
+          </div>
+          <div class="flex items-center space-x-2">
+            <label class="text-xs font-bold text-slate-500 whitespace-nowrap">Trạng thái:</label>
+            <select id="filterStatus" onchange="renderBookingList()" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
+              <option value="ALL">Tất cả</option>
+              <option value="Chờ cọc">Chờ cọc</option>
+              <option value="Đã cọc">Đã cọc</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600 uppercase text-xs border-b border-slate-200 font-bold">
+              <tr>
+                <th class="py-3.5 px-4">Mã Đặt</th>
+                <th class="py-3.5 px-4">Khách Hàng</th>
+                <th class="py-3.5 px-4">Môn & Sân</th>
+                <th class="py-3.5 px-4">Thời Gian</th>
+                <th class="py-3.5 px-4">Tổng Tiền</th>
+                <th class="py-3.5 px-4">Trạng Thái</th>
+                <th class="py-3.5 px-4 text-center">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="bookingTableBody" class="divide-y divide-slate-100">
+            </tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="hidden p-12 text-center text-slate-400">
+          <i class="fa-regular fa-folder-open text-5xl mb-3 text-slate-300"></i>
+          <p class="font-medium">Chưa có lịch đặt sân nào phù hợp với bộ lọc.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: THỐNG KÊ -->
+    <section id="tabStats" class="hidden space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold text-slate-400 uppercase">Tổng Lượt Đặt Sân</p>
+              <h3 id="statTotalBookings" class="text-3xl font-extrabold text-slate-800 mt-1">0</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-list-check"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold text-slate-400 uppercase">Tổng Doanh Thu Ước Tính</p>
+              <h3 id="statTotalRevenue" class="text-3xl font-extrabold text-emerald-600 mt-1">0 ₫</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold text-slate-400 uppercase">Tiền Cọc Thực Thu (30%)</p>
+              <h3 id="statTotalDeposit" class="text-3xl font-extrabold text-amber-600 mt-1">0 ₫</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-vault"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center">
+          <i class="fa-solid fa-chart-pie text-emerald-600 mr-2"></i> Tỷ Lệ Đặt Theo Môn Thể Thao
+        </h3>
+        <div id="sportStatsBar" class="space-y-4">
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL ĐĂNG TIN CẦN THUÊ NGƯỜI GẤP (QUICK RINGER REQUEST) -->
+  <div id="quickRingerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
+      <button onclick="closeQuickRingerModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="flex items-center gap-2.5 border-b pb-3">
+        <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-user-ninja"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-black text-slate-800">Đăng Tin Tìm Lính Đánh Thuê Gấp</h3>
+          <p class="text-xs text-slate-500">Hiển thị ngay lên Sàn Bơm Đều để người chơi tự do nhận kèo</p>
+        </div>
+      </div>
+
+      <form onsubmit="submitQuickRinger(event)" class="space-y-3.5 text-sm">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Tên đội / Người gọi *</label>
+            <input type="text" id="qrTeamName" required placeholder="VD: FC Mỹ Đình" class="w-full px-3 py-2 border rounded-lg">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">SĐT Liên hệ *</label>
+            <input type="tel" id="qrPhone" required placeholder="0987654321" class="w-full px-3 py-2 border rounded-lg">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Môn thể thao</label>
+            <select id="qrSport" onchange="updateQuickRingerPositions()" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold">
+              <option value="football">⚽ Bóng Đá</option>
+              <option value="pickleball">🏓 Pickleball</option>
+              <option value="badminton">🏸 Cầu Lông</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Vị trí cần thuê</label>
+            <select id="qrPosition" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold">
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Sân & Cơ sở *</label>
+            <input type="text" id="qrPitch" required placeholder="VD: Sân 7A Mỹ Đình" class="w-full px-3 py-2 border rounded-lg">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Khung giờ hôm nay *</label>
+            <input type="text" id="qrTime" required value="19:00-20:30" class="w-full px-3 py-2 border rounded-lg">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Số lượng</label>
+            <input type="number" id="qrCount" value="1" min="1" max="10" class="w-full px-3 py-2 border rounded-lg font-bold">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-bold text-slate-600 mb-1">Quyền lợi / Thù lao trả người chơi</label>
+            <select id="qrPerk" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold text-emerald-700">
+              <option value="Miễn phí 100% tiền sân + Nước">Miễn phí 100% sân + Nước</option>
+              <option value="Trả công 100.000đ + Bao nước">Trả công 100k + Bao nước</option>
+              <option value="Trả công 150.000đ (Bắt gôn cứng)">Trả công 150k (Bắt gôn cứng)</option>
+              <option value="Giảm 50% tiền sân giao lưu">Giảm 50% tiền sân giao lưu</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow transition">
+          <i class="fa-solid fa-paper-plane mr-1.5"></i> Phát Tín Hiệu Tìm Người Ngay
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL ĐĂNG KÝ LÀM LÍNH ĐÁNH THUÊ (FREELANCER PROFILE) -->
+  <div id="freelancerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+      <button onclick="closeFreelancerModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="flex items-center gap-2.5 border-b pb-3">
+        <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-id-badge"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-black text-slate-800">Đăng Ký Hồ Sơ Lính Đánh Thuê</h3>
+          <p class="text-xs text-slate-500">Để các đội bóng / hội pickleball gọi đi đá giao lưu</p>
+        </div>
+      </div>
+
+      <form onsubmit="submitFreelancer(event)" class="space-y-3.5 text-sm">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Họ tên / Biệt danh *</label>
+          <input type="text" id="flName" required placeholder="VD: Minh Quân (Gôn Phủi)" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Số điện thoại *</label>
+            <input type="tel" id="flPhone" required placeholder="0987654321" class="w-full px-3 py-2 border rounded-lg">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Khu vực hoạt động</label>
+            <select id="flArea" class="w-full px-3 py-2 border rounded-lg bg-white">
+              <option value="Mỹ Đình - Nam Từ Liêm">Mỹ Đình - Nam Từ Liêm</option>
+              <option value="Cầu Giấy - Dịch Vọng">Cầu Giấy - Dịch Vọng</option>
+              <option value="Thanh Xuân - Hà Đông">Thanh Xuân - Hà Đông</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Môn chuyên</label>
+            <select id="flSport" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold">
+              <option value="football">⚽ Bóng Đá</option>
+              <option value="pickleball">🏓 Pickleball</option>
+              <option value="badminton">🏸 Cầu Lông</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Vị trí / Trình độ sở trường</label>
+            <input type="text" id="flRole" required placeholder="VD: Thủ môn / DUPR 3.5" class="w-full px-3 py-2 border rounded-lg">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Mức phí / Quyền lợi mong muốn</label>
+          <input type="text" id="flFee" required value="Miễn phí sân hoặc 100k" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-2.5 rounded-xl shadow transition">
+          <i class="fa-solid fa-check mr-1.5"></i> Lên Sàn Sẵn Sàng Nhận Kèo
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL XUẤT HÓA ĐƠN, VIETQR & CAMERA SÂN -->
+  <div id="invoiceModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative my-8 max-h-[92vh] overflow-y-auto">
+      <button onclick="closeInvoiceModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 no-print">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div id="printableInvoice" class="space-y-5">
+        <div class="text-center border-b pb-4">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 font-black text-xl mb-2">
+            <i class="fa-solid fa-futbol"></i>
+          </div>
+          <h3 class="text-xl font-black text-emerald-700 uppercase tracking-wide">XÁC NHẬN ĐẶT SÂN - PITCHHUB 88</h3>
+          <p class="text-xs text-slate-500 mt-1">Mã hóa đơn: <span id="modalInvoiceId" class="font-mono font-bold text-slate-800"></span></p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm bg-slate-50 p-4 rounded-xl border border-slate-100">
+          <div class="flex justify-between"><span class="text-slate-500">Đại diện:</span> <span id="modalCustomer" class="font-bold text-slate-800"></span></div>
+          <div class="flex justify-between"><span class="text-slate-500">SĐT:</span> <span id="modalPhone" class="font-bold text-slate-800"></span></div>
+          <div class="flex justify-between"><span class="text-slate-500">Môn:</span> <span id="modalSport" class="font-bold text-emerald-700"></span></div>
+          <div class="flex justify-between"><span class="text-slate-500">Sân:</span> <span id="modalPitch" class="font-bold text-slate-800"></span></div>
+          <div class="col-span-full flex justify-between border-t border-slate-200/70 pt-1.5 mt-1"><span class="text-slate-500">Cơ sở:</span> <span id="modalLocation" class="font-medium text-slate-700 text-right"></span></div>
+          <div class="col-span-full flex justify-between"><span class="text-slate-500">Thời gian:</span> <span id="modalTime" class="font-bold text-emerald-700"></span></div>
+          <div class="col-span-full flex justify-between"><span class="text-slate-500">Dịch vụ:</span> <span id="modalServices" class="font-medium text-slate-800 text-right"></span></div>
+          <div id="modalRecurringRow" class="col-span-full flex justify-between hidden"><span class="text-slate-500">Lịch cố định tháng:</span> <span id="modalRecurringInfo" class="font-bold text-amber-700"></span></div>
+          <div id="modalRingerRow" class="col-span-full flex justify-between hidden"><span class="text-slate-500">Thuê người gấp:</span> <span id="modalRingerInfo" class="font-bold text-indigo-700"></span></div>
+          <div id="modalMatchmakingRow" class="col-span-full flex justify-between hidden"><span class="text-slate-500">Ghép kèo:</span> <span id="modalMatchmakingInfo" class="font-bold text-amber-600"></span></div>
+        </div>
+
+        <div class="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200 text-sm space-y-2">
+          <div class="flex justify-between"><span class="text-slate-600">Tổng chi phí trận đấu:</span> <span id="modalTotal" class="font-bold text-slate-900 text-base"></span></div>
+          <div class="flex justify-between items-center"><span class="text-slate-600">Tiền cọc giữ sân (30%):</span> <span id="modalDeposit" class="font-black text-emerald-700 text-lg"></span></div>
+        </div>
+
+        <!-- Section VietQR & Split Bill -->
+        <div class="border-t border-dashed border-slate-300 pt-4 space-y-4 no-print">
+          <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+            <i class="fa-solid fa-qrcode text-emerald-600"></i> Thanh Toán Cọc Qua VietQR Ngân Hàng
+          </h4>
+          
+          <div class="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <img id="modalQrCodeImg" src="" alt="VietQR Payment Code" class="w-36 h-36 object-contain rounded-lg border border-white shadow-sm bg-white">
+            <div class="text-xs space-y-1.5 text-slate-600 flex-1">
+              <p><strong class="text-slate-800">Ngân hàng:</strong> MBBank (Quân Đội)</p>
+              <p><strong class="text-slate-800">Số tài khoản:</strong> <span class="font-mono font-bold text-emerald-700">8888999901</span></p>
+              <p><strong class="text-slate-800">Chủ tài khoản:</strong> NGUYEN MINH QUAN</p>
+              <p><strong class="text-slate-800">Nội dung CK:</strong> <span id="modalQrMemo" class="font-mono font-bold text-amber-700">PITCH88 ...</span></p>
+              <p class="text-[11px] text-emerald-800 italic mt-1">* Quét mã trên ứng dụng Bank bất kỳ để tự động điền số tiền cọc!</p>
+            </div>
+          </div>
+
+          <!-- Quick Split Bill Link Generator -->
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+                <i class="fa-solid fa-calculator text-emerald-600"></i> Chia tiền sân cho đồng đội (Split Bill)
+              </span>
+              <span id="splitPerPerson" class="text-xs font-extrabold text-emerald-700">0 ₫ / người (7 người)</span>
+            </div>
+            <div class="flex gap-2">
+              <input type="number" id="splitCountInput" value="7" min="1" max="30" onchange="calculateSplitBill()" class="w-20 px-2 py-1 border rounded text-xs text-center font-bold">
+              <button onclick="copySplitBillLink()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1.5 rounded transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-copy"></i> Sao Chép Tin Nhắn Đòi Tiền Zalo
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION CAMERA SÂN & TỰ CẮT VIDEO IN INVOICE -->
+        <div class="border-t border-dashed border-slate-300 pt-4 space-y-3 no-print">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+              <i class="fa-solid fa-video text-emerald-600"></i> Quyền Truy Cập Camera Sân & Tự Cắt Clip
+            </h4>
+            <span id="modalHighlightBadge" class="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+              Đã cấp quyền Camera
+            </span>
+          </div>
+
+          <div class="bg-slate-900 rounded-xl p-4 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="space-y-1 text-xs">
+              <p class="font-bold text-sm text-emerald-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-unlock-keyhole"></i> Mã mở khóa Camera trận này: <span id="modalCamPasscode" class="font-mono bg-white/15 px-2 py-0.5 rounded text-amber-300">CAM-8801</span>
+              </p>
+              <p class="text-slate-300">Bạn có thể xem lại toàn bộ 90 phút của sân và tự chọn mốc phút/giây để cắt các pha bóng đẹp theo ý muốn.</p>
+            </div>
+            <button onclick="openCameraStudioForBooking()" class="px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold rounded-xl text-xs transition shadow flex items-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-scissors"></i> Mở Camera & Tự Cắt Clip
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="mt-6 flex space-x-3 no-print">
+        <button onclick="window.print()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl transition text-sm flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-print"></i> In / Xuất PDF Hóa Đơn
+        </button>
+        <button onclick="closeInvoiceModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition text-sm">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL XEM VIDEO PLAYER GIẢ LẬP -->
+  <div id="videoPlayerModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 shadow-2xl space-y-4 text-white">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 bg-rose-600 text-[11px] font-bold rounded uppercase">Replay</span>
+          <h3 id="playerModalTitle" class="font-bold text-sm sm:text-base">Highlight Trận Đấu - PitchHub 88</h3>
+        </div>
+        <button onclick="closeVideoPlayer()" class="text-slate-400 hover:text-white text-xl">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="relative aspect-video bg-black rounded-xl overflow-hidden flex flex-col items-center justify-center border border-slate-800">
+        <img id="playerModalImg" src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=900&auto=format&fit=crop&q=80" class="w-full h-full object-cover opacity-50">
+        <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+          <div class="w-16 h-16 rounded-full bg-rose-600/90 flex items-center justify-center text-2xl mb-3 animate-pulse shadow-lg">
+            <i class="fa-solid fa-film"></i>
+          </div>
+          <p class="font-bold text-base sm:text-lg text-white drop-shadow">Đang phát luồng Video Highlight (1080p)</p>
+          <p id="playerModalMeta" class="text-xs text-slate-300 mt-1">Watermark: PitchHub 88 • Góc quay toàn cảnh sân</p>
+          
+          <div class="w-full max-w-md bg-slate-700 h-1.5 rounded-full mt-4 overflow-hidden">
+            <div class="bg-rose-500 h-full w-2/3 rounded-full"></div>
+          </div>
+          <div class="w-full max-w-md flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>00:18</span>
+            <span>00:30</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button onclick="downloadHighlight()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5">
+          <i class="fa-solid fa-download"></i> Tải về máy
+        </button>
+        <button onclick="shareToTikTok()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 rounded-xl text-xs font-bold flex items-center gap-1.5">
+          <i class="fa-solid fa-share"></i> Chia sẻ ngay
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    const SPORT_CONFIG = {
+      football: {
+        name: '⚽ Bóng Đá',
+        types: {
+          '5': { basePrice: 300000, names: ['Sân 5A (Cỏ nhân tạo 3C)', 'Sân 5B (Cỏ nhân tạo 3C)'] },
+          '7': { basePrice: 600000, names: ['Sân 7A (Chuẩn VFF)', 'Sân 7B (Chuẩn VFF)', 'Sân 7C (Chuẩn VFF)'] },
+          '11': { basePrice: 1500000, names: ['Sân 11A (Cỏ tự nhiên)'] }
+        },
+        services: [
+          { id: 'serviceWater', name: 'Thùng nước suối (+50k)', price: 50000 },
+          { id: 'serviceBibs', name: 'Áo bít 2 màu (+30k)', price: 30000 },
+          { id: 'serviceRef', name: 'Trọng tài VFF (+200k)', price: 200000 },
+          { id: 'serviceAiCam', name: '📹 Truy cập Camera Sân (+50k)', price: 50000 }
+        ],
+        ringerPositions: [
+          '🧤 Thủ môn (Bắt gôn)',
+          '⚽ Tiền đạo / Cánh',
+          '🛡️ Hậu vệ / Thòng',
+          '🎯 Tiền vệ trung tâm',
+          '🔥 Cầu thủ đa năng (Lấp chỗ trống)'
+        ]
+      },
+      pickleball: {
+        name: '🏓 Pickleball',
+        types: {
+          'indoor': { basePrice: 200000, names: ['Sân Pickleball Trong Nhà P1', 'Sân Pickleball Trong Nhà P2'] },
+          'outdoor': { basePrice: 150000, names: ['Sân Pickleball Ngoài Trời O1', 'Sân Pickleball Ngoài Trời O2'] }
+        },
+        services: [
+          { id: 'serviceWater', name: 'Thùng nước suối (+50k)', price: 50000 },
+          { id: 'servicePaddles', name: 'Thuê 2 vợt Carbon (+40k)', price: 40000 },
+          { id: 'serviceBalls', name: 'Hộp 3 bóng Franklin (+30k)', price: 30000 },
+          { id: 'serviceAiCam', name: '📹 Truy cập Camera Sân (+40k)', price: 40000 }
+        ],
+        ringerPositions: [
+          '🏓 Tay vợt đánh đôi Nam/Nữ',
+          '🔥 Tay vợt trình DUPR 3.0 - 3.5',
+          '🏆 Tay vợt trình DUPR 3.5+ (Kéo team)',
+          '🌱 Tay vợt giao lưu vui vẻ (Newbie)'
+        ]
+      },
+      badminton: {
+        name: '🏸 Cầu Lông',
+        types: {
+          'standard': { basePrice: 100000, names: ['Sân Cầu Lông C1 (Thảm Yonex)', 'Sân Cầu Lông C2 (Thảm Yonex)'] },
+          'vip': { basePrice: 140000, names: ['Sân VIP C3 (Điều hòa + Thảm)', 'Sân VIP C4 (Điều hòa + Thảm)'] }
+        },
+        services: [
+          { id: 'serviceWater', name: 'Nước suối (+20k)', price: 20000 },
+          { id: 'serviceRackets', name: 'Thuê 2 vợt cầu lông (+30k)', price: 30000 },
+          { id: 'serviceShuttle', name: 'Ống cầu Thành Công (+40k)', price: 40000 },
+          { id: 'serviceAiCam', name: '📹 Truy cập Camera Sân (+30k)', price: 30000 }
+        ],
+        ringerPositions: [
+          '🏸 Lông thủ đánh Đôi Nam',
+          '🏸 Lông thủ đánh Đôi Nam Nữ',
+          '🏸 Lông thủ đánh Đơn giao lưu',
+          '🔥 Lông thủ trình Khá / Bán chuyên'
+        ]
+      }
+    };
+
+    const TIME_SLOTS_CONFIG = [
+      { value: '06:00-07:30', label: '06:00 - 07:30 (Giờ thường)', rate: 1.0 },
+      { value: '07:30-09:00', label: '07:30 - 09:00 (Giờ thường)', rate: 1.0 },
+      { value: '16:00-17:30', label: '16:00 - 17:30 (Giờ vàng +20%)', rate: 1.2 },
+      { value: '17:30-19:00', label: '17:30 - 19:00 (Giờ vàng +20%)', rate: 1.2 },
+      { value: '19:00-20:30', label: '19:00 - 20:30 (Giờ cao điểm +30%)', rate: 1.3 },
+      { value: '20:30-22:00', label: '20:30 - 22:00 (Giờ xả đêm - 1.0x)', rate: 1.0 }
+    ];
+
+    const TIME_MULTIPLIERS = Object.fromEntries(TIME_SLOTS_CONFIG.map(s => [s.value, s.rate]));
+
+    const INITIAL_DEMO_DATA = [
+      {
+        id: 'PITCH-8801',
+        name: 'FC Win88',
+        phone: '0988776655',
+        sport: 'football',
+        location: 'Cơ sở 1: Mỹ Đình (Lê Đức Thọ, Nam Từ Liêm)',
+        pitchType: '7',
+        pitchName: 'Sân 7A (Chuẩn VFF)',
+        date: new Date().toISOString().split('T')[0],
+        time: '19:00-20:30',
+        services: ['Thùng nước suối (+50k)', 'Trọng tài VFF (+200k)', '📹 Truy cập Camera Sân (+50k)'],
+        note: 'Thiếu 1 thủ môn bắt cứng tối nay, anh em nào rảnh qua bắt giúp đội!',
+        total: 1080000,
+        deposit: 324000,
+        status: 'Đã cọc',
+        createdAt: new Date().toISOString(),
+        isRingerNeeded: true,
+        ringerPosition: '🧤 Thủ môn (Bắt gôn)',
+        ringerCount: 1,
+        ringerClaimed: 0,
+        ringerPerk: 'Trả công 150.000đ (Bắt gôn cứng)',
+        isMatchmaking: true,
+        matchSkill: 'Trung bình / Bán chuyên',
+        matchSplitRatio: 'Chia đôi 50 - 50'
+      },
+      {
+        id: 'PITCH-8802',
+        name: 'Vân Anh Pickleball Club',
+        phone: '0912345678',
+        sport: 'pickleball',
+        location: 'Cơ sở 3: Cầu Giấy (Trần Thái Tông, Cầu Giấy)',
+        pitchType: 'indoor',
+        pitchName: 'Sân Pickleball Trong Nhà P1',
+        date: new Date().toISOString().split('T')[0],
+        time: '17:30-19:00',
+        services: ['Thuê 2 vợt Carbon (+40k)', '📹 Truy cập Camera Sân (+40k)'],
+        note: 'Nhóm 3 người đang thiếu 1 tay vợt đánh đôi trình DUPR 3.0-3.5',
+        total: 320000,
+        deposit: 96000,
+        status: 'Chờ cọc',
+        createdAt: new Date().toISOString(),
+        isRingerNeeded: true,
+        ringerPosition: '🏓 Tay vợt đánh đôi (Nam/Nữ)',
+        ringerCount: 1,
+        ringerClaimed: 0,
+        ringerPerk: 'Miễn phí 100% tiền sân + Nước',
+        isMatchmaking: false
+      }
+    ];
+
+    const INITIAL_FREELANCERS = [
+      {
+        id: 'FL-01',
+        sport: 'football',
+        name: 'Tuấn Anh (Gôn Thép)',
+        phone: '0977112233',
+        area: 'Mỹ Đình - Nam Từ Liêm',
+        role: '🧤 Thủ môn phủi (3 năm kinh nghiệm)',
+        fee: 'Miễn phí sân hoặc 100k',
+        rating: '4.9 ★ (42 trận)'
+      },
+      {
+        id: 'FL-02',
+        sport: 'pickleball',
+        name: 'Hoàng Nam (DUPR 3.8)',
+        phone: '0966554433',
+        area: 'Cầu Giấy - Dịch Vọng',
+        role: '🏓 Pickleball Đánh Đôi / Kéo Team',
+        fee: 'Miễn phí tiền sân + Bóng',
+        rating: '5.0 ★ (28 trận)'
+      },
+      {
+        id: 'FL-03',
+        sport: 'football',
+        name: 'Đức Minh #10',
+        phone: '0911998877',
+        area: 'Thanh Xuân - Hà Đông',
+        role: '⚽ Tiền đạo / Tiền vệ công sân 7',
+        fee: 'Miễn phí sân giao lưu',
+        rating: '4.8 ★ (35 trận)'
+      },
+      {
+        id: 'FL-04',
+        sport: 'badminton',
+        name: 'Khánh Linh Badminton',
+        phone: '0933445566',
+        area: 'Mỹ Đình - Nam Từ Liêm',
+        role: '🏸 Đôi Nam Nữ / Đôi Nữ Cầu Lông',
+        fee: 'Share 50% hoặc Free sân',
+        rating: '4.9 ★ (19 trận)'
+      }
+    ];
+
+    let highlightClips = [
+      {
+        id: 'CUT-101',
+        title: 'Cú sút xa góc chữ A - FC Win88',
+        sport: '⚽ Bóng Đá',
+        pitch: 'Sân 7A Mỹ Đình (24:05 → 24:30)',
+        duration: '00:25',
+        timeAgo: '15 phút trước',
+        views: 142,
+        thumb: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=700&auto=format&fit=crop&q=80',
+        triggerType: 'Người chơi tự cắt (16:9)'
+      },
+      {
+        id: 'CUT-102',
+        title: 'Pha đôi công ATP đỉnh cao - Vân Anh Club',
+        sport: '🏓 Pickleball',
+        pitch: 'Sân P1 Cầu Giấy (41:10 → 41:32)',
+        duration: '00:22',
+        timeAgo: '1 giờ trước',
+        views: 89,
+        thumb: 'https://images.unsplash.com/photo-1599586120429-48281b6f0ece?w=700&auto=format&fit=crop&q=80',
+        triggerType: 'Người chơi tự cắt (9:16 TikTok)'
+      }
+    ];
+
+    let bookings = JSON.parse(localStorage.getItem('pitch_bookings'));
+    if (!bookings || bookings.length === 0) {
+      bookings = INITIAL_DEMO_DATA;
+      localStorage.setItem('pitch_bookings', JSON.stringify(bookings));
+    }
+
+    let freelancers = JSON.parse(localStorage.getItem('pitch_freelancers_v2'));
+    if (!freelancers || freelancers.length === 0) {
+      freelancers = INITIAL_FREELANCERS;
+      localStorage.setItem('pitch_freelancers_v2', JSON.stringify(freelancers));
+    }
+
+    let currentRingerSportFilter = 'ALL';
+    let currentSelectedBookingForInvoice = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('bookingDate').value = new Date().toISOString().split('T')[0];
+      handleSportChange();
+      renderBookingList();
+      renderRingerMarketplace();
+      renderMatchmakingList();
+      populateCameraBookingSelect();
+      renderHighlightsGrid();
+      updateStats();
+      checkWeather();
+    });
+
+    function findExistingBooking(location, pitchName, date, timeSlot) {
+      return bookings.find(b => 
+        b.location === location &&
+        b.pitchName === pitchName &&
+        b.date === date &&
+        b.time === timeSlot
+      );
+    }
+
+    function syncAvailabilityUI() {
+      const location = document.getElementById('pitchLocation').value;
+      const pitchName = document.getElementById('pitchSelect').value;
+      const date = document.getElementById('bookingDate').value;
+      const timeSelect = document.getElementById('timeSlot');
+      const currentSelectedTime = timeSelect.value || '17:30-19:00';
+
+      timeSelect.innerHTML = '';
+      let firstAvailableSlot = null;
+
+      TIME_SLOTS_CONFIG.forEach(slot => {
+        const booked = findExistingBooking(location, pitchName, date, slot.value);
+        const opt = document.createElement('option');
+        opt.value = slot.value;
+        
+        if (booked) {
+          opt.disabled = true;
+          opt.textContent = `🔒 ${slot.value} — ĐÃ ĐẶT (${booked.name})`;
+          opt.className = 'text-red-500 bg-red-50';
+        } else {
+          opt.textContent = `✅ ${slot.label}`;
+          if (!firstAvailableSlot) firstAvailableSlot = slot.value;
+        }
+        timeSelect.appendChild(opt);
+      });
+
+      const currentSlotBooked = findExistingBooking(location, pitchName, date, currentSelectedTime);
+      if (currentSelectedTime && !currentSlotBooked) {
+        timeSelect.value = currentSelectedTime;
+      } else if (firstAvailableSlot && !currentSelectedTime) {
+        timeSelect.value = firstAvailableSlot;
+      } else {
+        timeSelect.value = currentSelectedTime;
+      }
+
+      const visualGrid = document.getElementById('slotVisualGrid');
+      visualGrid.innerHTML = '';
+
+      TIME_SLOTS_CONFIG.forEach(slot => {
+        const booked = findExistingBooking(location, pitchName, date, slot.value);
+        const isSelected = timeSelect.value === slot.value;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+
+        if (booked) {
+          btn.disabled = true;
+          btn.className = 'p-2 rounded-lg border border-red-200 bg-red-50/80 text-left opacity-80 cursor-not-allowed';
+          btn.innerHTML = `
+            <div class="flex items-center justify-between text-[11px] font-bold text-red-700">
+              <span>${slot.value}</span>
+              <i class="fa-solid fa-lock text-[10px]"></i>
+            </div>
+            <div class="text-[10px] text-red-600 truncate mt-0.5 font-medium">Đã đặt: ${escapeHtml(booked.name)}</div>
+          `;
+        } else {
+          btn.className = isSelected 
+            ? 'p-2 rounded-lg border-2 border-emerald-600 bg-emerald-100/70 text-left shadow-sm transition'
+            : 'p-2 rounded-lg border border-emerald-200 bg-white hover:bg-emerald-50 text-left transition';
+          btn.onclick = () => {
+            timeSelect.value = slot.value;
+            syncAvailabilityUI();
+          };
+          btn.innerHTML = `
+            <div class="flex items-center justify-between text-[11px] font-bold text-emerald-800">
+              <span>${slot.value}</span>
+              <span class="text-[9px] px-1.5 py-0.2 bg-emerald-600 text-white rounded">Trống</span>
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">${slot.rate}x giá sân</div>
+          `;
+        }
+        visualGrid.appendChild(btn);
+      });
+
+      const recurringInfo = getRecurringSchedulePreview(location, pitchName, date, timeSelect.value);
+      const activeBooked = findExistingBooking(location, pitchName, date, timeSelect.value);
+      const conflictBox = document.getElementById('conflictAlertBox');
+      const submitBtn = document.getElementById('submitBookingBtn');
+
+      if (activeBooked) {
+        conflictBox.classList.remove('hidden');
+        document.getElementById('conflictAlertText').textContent = `Sân "${pitchName}" khung giờ ${timeSelect.value} ngày ${date} đã được đội "${activeBooked.name}" đặt trước! Vui lòng chọn giờ trống màu xanh phía trên.`;
+        submitBtn.disabled = true;
+        submitBtn.className = 'w-full bg-slate-300 text-slate-500 font-bold py-3.5 rounded-xl cursor-not-allowed flex items-center justify-center text-base';
+        submitBtn.innerHTML = '<i class="fa-solid fa-ban mr-2"></i> Khung Giờ Đã Kín - Không Thể Đặt Trùng';
+      } else if (recurringInfo.isRecurring && recurringInfo.conflicts.length > 0) {
+        conflictBox.classList.remove('hidden');
+        const cFirst = recurringInfo.conflicts[0];
+        document.getElementById('conflictAlertText').textContent = `Lịch cố định bị trùng vào ngày ${cFirst.date} (đã có đội "${cFirst.bookedBy}" đặt). Vui lòng đổi khung giờ hoặc sân khác!`;
+        submitBtn.disabled = true;
+        submitBtn.className = 'w-full bg-slate-300 text-slate-500 font-bold py-3.5 rounded-xl cursor-not-allowed flex items-center justify-center text-base';
+        submitBtn.innerHTML = '<i class="fa-solid fa-ban mr-2"></i> Trùng Lịch Cố Định Trong Tháng';
+      } else {
+        conflictBox.classList.add('hidden');
+        submitBtn.disabled = false;
+        submitBtn.className = 'w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-all flex items-center justify-center text-base';
+        submitBtn.innerHTML = recurringInfo.isRecurring 
+          ? `<i class="fa-solid fa-calendar-check mr-2"></i> Xác Nhận Đặt Cố Định ${recurringInfo.weeks} Tuần & Tạo Hóa Đơn`
+          : '<i class="fa-solid fa-check-circle mr-2"></i> Xác Nhận Đặt Sân & Tạo Hóa Đơn';
+      }
+
+      calculatePrice();
+    }
+
+    function handleSportChange() {
+      const sportKey = document.getElementById('sportCategory').value;
+      const config = SPORT_CONFIG[sportKey];
+      
+      document.getElementById('summarySportBadge').textContent = config.name;
+
+      const pitchTypeSelect = document.getElementById('pitchType');
+      pitchTypeSelect.innerHTML = '';
+      
+      for (const [typeKey] of Object.entries(config.types)) {
+        const opt = document.createElement('option');
+        opt.value = typeKey;
+        opt.textContent = typeKey === '5' ? 'Sân 5 người' : typeKey === '7' ? 'Sân 7 người' : typeKey === '11' ? 'Sân 11 người' : typeKey === 'indoor' ? 'Trong nhà' : typeKey === 'outdoor' ? 'Ngoài trời' : typeKey === 'vip' ? 'Sân VIP' : 'Sân Chuẩn';
+        pitchTypeSelect.appendChild(opt);
+      }
+
+      const ringerPosSelect = document.getElementById('ringerPosition');
+      if (ringerPosSelect && config.ringerPositions) {
+        ringerPosSelect.innerHTML = '';
+        config.ringerPositions.forEach(pos => {
+          const opt = document.createElement('option');
+          opt.value = pos;
+          opt.textContent = pos;
+          ringerPosSelect.appendChild(opt);
+        });
+      }
+
+      const servicesContainer = document.getElementById('servicesContainer');
+      servicesContainer.innerHTML = '';
+      config.services.forEach(s => {
+        const label = document.createElement('label');
+        label.className = 'flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition border-slate-200';
+        label.innerHTML = `
+          <input type="checkbox" id="${s.id}" data-price="${s.price}" data-name="${s.name}" onchange="calculatePrice()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+          <span class="ml-2 text-xs font-semibold text-slate-700">${s.name}</span>
+        `;
+        servicesContainer.appendChild(label);
+      });
+
+      updatePitchOptions();
+    }
+
+    function updatePitchOptions() {
+      const sportKey = document.getElementById('sportCategory').value;
+      const type = document.getElementById('pitchType').value;
+      const pitchSelect = document.getElementById('pitchSelect');
+      pitchSelect.innerHTML = '';
+      
+      const names = SPORT_CONFIG[sportKey].types[type]?.names || [];
+      names.forEach((name, index) => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        if (index === 0) opt.selected = true;
+        pitchSelect.appendChild(opt);
+      });
+      
+      syncAvailabilityUI();
+    }
+
+    function toggleRecurringFields() {
+      const isChecked = document.getElementById('enableRecurring').checked;
+      const fields = document.getElementById('recurringFields');
+      if (isChecked) fields.classList.remove('hidden');
+      else fields.classList.add('hidden');
+      syncAvailabilityUI();
+    }
+
+    function addDaysToDateStr(dateStr, daysToAdd) {
+      const parts = dateStr.split('-');
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      d.setDate(d.getDate() + daysToAdd);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function getVietnameseWeekday(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      const names = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+      return names[d.getDay()];
+    }
+
+    function getRecurringSchedulePreview(location, pitchName, startDate, timeSlot) {
+      const isRecurring = document.getElementById('enableRecurring')?.checked || false;
+      const weeks = isRecurring ? (parseInt(document.getElementById('recurringWeeks')?.value) || 4) : 1;
+      const discountRate = !isRecurring ? 0 : (weeks === 4 ? 0.10 : weeks === 8 ? 0.12 : 0.15);
+
+      const weekdayEl = document.getElementById('recurringWeekdayDisplay');
+      if (weekdayEl && startDate) {
+        weekdayEl.textContent = `Cố định ${getVietnameseWeekday(startDate)} hàng tuần`;
+      }
+
+      const dates = [];
+      const conflicts = [];
+      for (let i = 0; i < weeks; i++) {
+        const dStr = addDaysToDateStr(startDate, i * 7);
+        const existing = findExistingBooking(location, pitchName, dStr, timeSlot);
+        dates.push({ date: dStr, existing });
+        if (existing) {
+          conflicts.push({ date: dStr, bookedBy: existing.name });
+        }
+      }
+
+      const previewContainer = document.getElementById('recurringDatesPreview');
+      const statusEl = document.getElementById('recurringConflictStatus');
+      if (previewContainer && isRecurring) {
+        previewContainer.innerHTML = '';
+        dates.forEach((item, idx) => {
+          const badge = document.createElement('span');
+          if (item.existing) {
+            badge.className = 'text-[11px] px-2 py-1 rounded bg-red-100 text-red-700 font-mono font-bold border border-red-200';
+            badge.innerHTML = `Tuần ${idx + 1}: ${item.date} <i class="fa-solid fa-xmark"></i> Trùng`;
+          } else {
+            badge.className = 'text-[11px] px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-mono font-semibold border border-emerald-200';
+            badge.innerHTML = `Tuần ${idx + 1}: ${item.date} <i class="fa-solid fa-check text-emerald-600"></i>`;
+          }
+          previewContainer.appendChild(badge);
+        });
+
+        if (statusEl) {
+          if (conflicts.length > 0) {
+            statusEl.textContent = `Trùng ${conflicts.length}/${weeks} buổi!`;
+            statusEl.className = 'text-red-600 font-bold';
+          } else {
+            statusEl.textContent = `Sẵn sàng khóa đủ ${weeks}/${weeks} buổi`;
+            statusEl.className = 'text-emerald-600 font-bold';
+          }
+        }
+      }
+
+      return { isRecurring, weeks, discountRate, dates, conflicts };
+    }
+
+    function calculatePrice() {
+      const sportKey = document.getElementById('sportCategory').value;
+      const type = document.getElementById('pitchType').value;
+      const timeSlot = document.getElementById('timeSlot').value;
+      const location = document.getElementById('pitchLocation').value;
+      const pitchName = document.getElementById('pitchSelect').value;
+      const date = document.getElementById('bookingDate').value;
+      
+      const basePrice = SPORT_CONFIG[sportKey].types[type]?.basePrice || 300000;
+      const rate = TIME_MULTIPLIERS[timeSlot] || 1.0;
+      
+      let serviceFee = 0;
+      const config = SPORT_CONFIG[sportKey];
+      config.services.forEach(s => {
+        const el = document.getElementById(s.id);
+        if (el && el.checked) {
+          serviceFee += s.price;
+        }
+      });
+
+      const singleSessionTotal = (basePrice * rate) + serviceFee;
+      const rec = getRecurringSchedulePreview(location, pitchName, date, timeSlot);
+
+      const totalBeforeDiscount = singleSessionTotal * rec.weeks;
+      const discountAmount = Math.round(totalBeforeDiscount * rec.discountRate);
+      const total = totalBeforeDiscount - discountAmount;
+      const deposit = Math.round(total * 0.3);
+
+      const recRow = document.getElementById('summaryRecurringRow');
+      if (recRow) {
+        if (rec.isRecurring) {
+          recRow.classList.remove('hidden');
+          document.getElementById('summaryRecurringLabel').textContent = `Gói cố định (${rec.weeks} tuần):`;
+          document.getElementById('summaryRecurringDiscount').textContent = `-${Math.round(rec.discountRate * 100)}% (-${formatVND(discountAmount)})`;
+        } else {
+          recRow.classList.add('hidden');
+        }
+      }
+
+      document.getElementById('summaryBasePrice').textContent = formatVND(basePrice);
+      document.getElementById('summaryTimeRate').textContent = rate + 'x';
+      document.getElementById('summaryServiceFee').textContent = formatVND(serviceFee);
+      document.getElementById('summaryTotalPrice').textContent = formatVND(total);
+      document.getElementById('summaryDeposit').textContent = formatVND(deposit);
+
+      return { basePrice, rate, serviceFee, singleSessionTotal, total, deposit, rec };
+    }
+
+    function toggleRingerFields() {
+      const isChecked = document.getElementById('enableRinger').checked;
+      const fields = document.getElementById('ringerFields');
+      if (isChecked) fields.classList.remove('hidden');
+      else fields.classList.add('hidden');
+    }
+
+    function toggleMatchmakingFields() {
+      const isChecked = document.getElementById('enableMatchmaking').checked;
+      const fields = document.getElementById('matchmakingFields');
+      if (isChecked) fields.classList.remove('hidden');
+      else fields.classList.add('hidden');
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      
+      const location = document.getElementById('pitchLocation').value;
+      const pitchName = document.getElementById('pitchSelect').value;
+      const date = document.getElementById('bookingDate').value;
+      const timeSlot = document.getElementById('timeSlot').value;
+
+      const duplicate = findExistingBooking(location, pitchName, date, timeSlot);
+      if (duplicate) {
+        alert(`⚠️ KHÔNG THỂ ĐẶT TRÙNG!\n\n${pitchName} (${location}) khung giờ ${timeSlot} ngày ${date} đã được đội "${duplicate.name}" đặt trước.`);
+        syncAvailabilityUI();
+        return;
+      }
+
+      const prices = calculatePrice();
+      const sportKey = document.getElementById('sportCategory').value;
+      const services = [];
+      SPORT_CONFIG[sportKey].services.forEach(s => {
+        const el = document.getElementById(s.id);
+        if (el && el.checked) services.push(s.name);
+      });
+
+      const isRingerNeeded = document.getElementById('enableRinger').checked;
+      const isMatchmaking = document.getElementById('enableMatchmaking').checked;
+
+      const rec = prices.rec;
+      if (rec.isRecurring && rec.conflicts.length > 0) {
+        alert(`⚠️ Không thể đặt lịch cố định vì có ${rec.conflicts.length} buổi bị trùng lịch trong tháng!`);
+        return;
+      }
+
+      const customerName = document.getElementById('customerName').value.trim();
+      const customerPhone = document.getElementById('customerPhone').value.trim();
+      const pitchTypeVal = document.getElementById('pitchType').value;
+      const baseNote = document.getElementById('bookingNote').value.trim();
+      const ringerPosVal = isRingerNeeded ? document.getElementById('ringerPosition').value : '';
+      const ringerCountVal = isRingerNeeded ? parseInt(document.getElementById('ringerCount').value) || 1 : 0;
+      const ringerPerkVal = isRingerNeeded ? document.getElementById('ringerPerk').value : '';
+      const matchSkillVal = isMatchmaking ? document.getElementById('matchSkill').value : '';
+      const matchSplitVal = isMatchmaking ? document.getElementById('matchSplitRatio').value : '';
+
+      const groupId = 'VIP-' + Math.floor(1000 + Math.random() * 9000);
+      const perSessionDiscountedTotal = Math.round(prices.total / rec.weeks);
+      const perSessionDeposit = Math.round(prices.deposit / rec.weeks);
+      const createdSessions = [];
+
+      rec.dates.forEach((item, idx) => {
+        const sessionBooking = {
+          id: rec.isRecurring ? `${groupId}-W${idx + 1}` : ('PITCH-' + Math.floor(1000 + Math.random() * 9000)),
+          name: customerName,
+          phone: customerPhone,
+          sport: sportKey,
+          location: location,
+          pitchType: pitchTypeVal,
+          pitchName: pitchName,
+          date: item.date,
+          time: timeSlot,
+          services: services,
+          note: rec.isRecurring 
+            ? `[Lịch cố định ${getVietnameseWeekday(date)} — Buổi ${idx + 1}/${rec.weeks}] ${baseNote}`.trim()
+            : baseNote,
+          total: perSessionDiscountedTotal,
+          deposit: perSessionDeposit,
+          status: 'Chờ cọc',
+          createdAt: new Date().toISOString(),
+          isRecurring: rec.isRecurring,
+          recurringWeeks: rec.weeks,
+          recurringSessionIndex: idx + 1,
+          recurringGroupTotal: prices.total,
+          recurringGroupDeposit: prices.deposit,
+          recurringDatesList: rec.dates.map(d => d.date),
+          isRingerNeeded: isRingerNeeded,
+          ringerPosition: ringerPosVal,
+          ringerCount: ringerCountVal,
+          ringerClaimed: 0,
+          ringerPerk: ringerPerkVal,
+          isMatchmaking: isMatchmaking,
+          matchSkill: matchSkillVal,
+          matchSplitRatio: matchSplitVal
+        };
+        createdSessions.push(sessionBooking);
+      });
+
+      for (let i = createdSessions.length - 1; i >= 0; i--) {
+        bookings.unshift(createdSessions[i]);
+      }
+      saveData();
+      
+      document.getElementById('bookingForm').reset();
+      document.getElementById('bookingDate').value = new Date().toISOString().split('T')[0];
+      handleSportChange();
+      toggleRecurringFields();
+      toggleRingerFields();
+      toggleMatchmakingFields();
+
+      openInvoiceModal(createdSessions[0]);
+      switchTab('list');
+    }
+
+    function filterRingerSport(sport) {
+      currentRingerSportFilter = sport;
+      ['ALL', 'football', 'pickleball', 'badminton'].forEach(s => {
+        const btn = document.getElementById('ringerFilter' + s);
+        if (s === sport) {
+          btn.className = 'px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200';
+        }
+      });
+      renderRingerMarketplace();
+    }
+
+    function renderRingerMarketplace() {
+      const container = document.getElementById('ringerListGrid');
+      const allRingerRequests = bookings.filter(b => b.isRingerNeeded);
+      const openSlotsCount = allRingerRequests.reduce((sum, b) => sum + Math.max(0, (b.ringerCount || 1) - (b.ringerClaimed || 0)), 0);
+      document.getElementById('ringerBadge').textContent = openSlotsCount;
+
+      const filtered = allRingerRequests.filter(b => currentRingerSportFilter === 'ALL' || b.sport === currentRingerSportFilter);
+      container.innerHTML = '';
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full text-center py-10 bg-white rounded-2xl border border-slate-200 text-slate-400 space-y-2">
+            <i class="fa-solid fa-user-check text-4xl text-indigo-300"></i>
+            <p class="font-medium">Hiện chưa có tin tuyển lính đánh thuê nào trong mục này.</p>
+          </div>
+        `;
+      } else {
+        filtered.forEach(b => {
+          const needed = b.ringerCount || 1;
+          const claimed = b.ringerClaimed || 0;
+          const remaining = Math.max(0, needed - claimed);
+          const isFull = remaining === 0;
+          const sportLabel = b.sport === 'football' ? '⚽ Bóng Đá' : b.sport === 'pickleball' ? '🏓 Pickleball' : '🏸 Cầu Lông';
+
+          const card = document.createElement('div');
+          card.className = `bg-white rounded-2xl p-5 shadow-sm border ${isFull ? 'border-slate-200 opacity-75' : 'border-indigo-200 hover:shadow-md'} transition flex flex-col justify-between space-y-4`;
+          card.innerHTML = `
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800">${sportLabel}</span>
+                ${isFull 
+                  ? '<span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800"><i class="fa-solid fa-check mr-1"></i>Đã đủ người</span>'
+                  : `<span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 animate-pulse">Cần gấp ${remaining}/${needed} người</span>`
+                }
+              </div>
+
+              <div>
+                <h3 class="font-black text-slate-800 text-base">${escapeHtml(b.ringerPosition || 'Tuyển người đá cùng')}</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Đội gọi: <strong class="text-slate-700">${escapeHtml(b.name)}</strong></p>
+              </div>
+
+              <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-bold flex items-center gap-2">
+                <i class="fa-solid fa-gift text-emerald-600 text-sm"></i>
+                <span>Quyền lợi: ${escapeHtml(b.ringerPerk || 'Miễn phí tiền sân')}</span>
+              </div>
+
+              <div class="text-xs text-slate-600 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <p><i class="fa-solid fa-location-dot text-indigo-600 mr-1.5"></i>${escapeHtml(b.pitchName)} - ${escapeHtml(b.location)}</p>
+                <p><i class="fa-solid fa-clock text-indigo-600 mr-1.5"></i><strong>${b.time}</strong> (${b.date})</p>
+                ${b.note ? `<p class="text-slate-500 italic mt-1">"${escapeHtml(b.note)}"</p>` : ''}
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+              <a href="tel:${b.phone}" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition flex items-center gap-1">
+                <i class="fa-solid fa-phone"></i> ${b.phone}
+              </a>
+              ${isFull
+                ? `<button disabled class="flex-1 bg-slate-200 text-slate-500 font-bold py-2 rounded-xl text-xs cursor-not-allowed">Đã Chốt Đủ Slot</button>`
+                : `<button onclick="claimRingerSlot('${b.id}')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-xs shadow transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-hand-fist"></i> Nhận Slot Đánh Thuê
+                  </button>`
+              }
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      }
+
+      const flGrid = document.getElementById('freelancerListGrid');
+      flGrid.innerHTML = '';
+      const filteredFreelancers = freelancers.filter(fl => currentRingerSportFilter === 'ALL' || (fl.sport || 'football') === currentRingerSportFilter);
+      if (filteredFreelancers.length === 0) {
+        flGrid.innerHTML = `<div class="col-span-full text-center py-6 bg-white rounded-xl border border-slate-200 text-xs text-slate-400">Chưa có lính đánh thuê nào đăng ký cho môn này.</div>`;
+      }
+      filteredFreelancers.forEach(fl => {
+        const item = document.createElement('div');
+        item.className = 'bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-indigo-300 transition flex flex-col justify-between space-y-3';
+        item.innerHTML = `
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${escapeHtml(fl.rating)}</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-500" title="Đang sẵn sàng"></span>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(fl.name)}</h4>
+            <p class="text-xs font-semibold text-indigo-700">${escapeHtml(fl.role)}</p>
+            <p class="text-[11px] text-slate-500"><i class="fa-solid fa-map-pin mr-1 text-slate-400"></i>${escapeHtml(fl.area)}</p>
+            <p class="text-[11px] text-emerald-700 font-medium"><i class="fa-solid fa-tag mr-1"></i>${escapeHtml(fl.fee)}</p>
+          </div>
+          <a href="tel:${fl.phone}" class="w-full py-1.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-bold rounded-lg text-xs transition flex items-center justify-center gap-1.5 border border-indigo-200">
+            <i class="fa-solid fa-phone-volume"></i> Gọi Thuê Ngay (${fl.phone})
+          </a>
+        `;
+        flGrid.appendChild(item);
+      });
+    }
+
+    function claimRingerSlot(bookingId) {
+      const booking = bookings.find(b => b.id === bookingId);
+      if (!booking) return;
+      const needed = booking.ringerCount || 1;
+      const claimed = booking.ringerClaimed || 0;
+
+      if (claimed >= needed) {
+        alert('Rất tiếc, slot này vừa có người nhận đủ rồi!');
+        return;
+      }
+
+      const playerName = prompt(`Nhập Tên & SĐT của bạn để chốt slot "${booking.ringerPosition}" cùng đội ${booking.name}:`);
+      if (!playerName || !playerName.trim()) return;
+
+      booking.ringerClaimed = claimed + 1;
+      booking.note = (booking.note ? booking.note + ' | ' : '') + `[Đã chốt lính đánh thuê: ${playerName.trim()}]`;
+      saveData();
+      alert(`🎉 CHỐT KÈO THÀNH CÔNG!\n\nBạn đã nhận slot "${booking.ringerPosition}" tại ${booking.pitchName} (${booking.time}).\nHãy gọi ngay cho đội trưởng ${booking.name} (${booking.phone}) để xác nhận giờ ra sân!`);
+    }
+
+    function updateQuickRingerPositions() {
+      const sport = document.getElementById('qrSport').value;
+      const posSelect = document.getElementById('qrPosition');
+      const positions = SPORT_CONFIG[sport]?.ringerPositions || [];
+      posSelect.innerHTML = '';
+      positions.forEach(pos => {
+        const opt = document.createElement('option');
+        opt.value = pos;
+        opt.textContent = pos;
+        posSelect.appendChild(opt);
+      });
+    }
+
+    function openQuickRingerModal() {
+      updateQuickRingerPositions();
+      document.getElementById('quickRingerModal').classList.remove('hidden');
+    }
+    function closeQuickRingerModal() {
+      document.getElementById('quickRingerModal').classList.add('hidden');
+    }
+
+    function submitQuickRinger(e) {
+      e.preventDefault();
+      const newReq = {
+        id: 'SOS-' + Math.floor(1000 + Math.random() * 9000),
+        name: document.getElementById('qrTeamName').value.trim(),
+        phone: document.getElementById('qrPhone').value.trim(),
+        sport: document.getElementById('qrSport').value,
+        location: 'Hà Nội (Tin tuyển gấp)',
+        pitchType: '7',
+        pitchName: document.getElementById('qrPitch').value.trim(),
+        date: new Date().toISOString().split('T')[0],
+        time: document.getElementById('qrTime').value.trim(),
+        services: [],
+        note: 'Tin đăng tuyển lính đánh thuê gấp!',
+        total: 0,
+        deposit: 0,
+        status: 'Đã cọc',
+        createdAt: new Date().toISOString(),
+        isRingerNeeded: true,
+        ringerPosition: document.getElementById('qrPosition').value,
+        ringerCount: parseInt(document.getElementById('qrCount').value) || 1,
+        ringerClaimed: 0,
+        ringerPerk: document.getElementById('qrPerk').value,
+        isMatchmaking: false
+      };
+
+      bookings.unshift(newReq);
+      saveData();
+      closeQuickRingerModal();
+      e.target.reset();
+      alert('📢 Đã phát tín hiệu tuyển lính đánh thuê lên sàn thành công!');
+    }
+
+    function openFreelancerModal() {
+      document.getElementById('freelancerModal').classList.remove('hidden');
+    }
+    function closeFreelancerModal() {
+      document.getElementById('freelancerModal').classList.add('hidden');
+    }
+
+    function submitFreelancer(e) {
+      e.preventDefault();
+      const newFl = {
+        id: 'FL-' + Math.floor(10 + Math.random() * 90),
+        sport: document.getElementById('flSport').value,
+        name: document.getElementById('flName').value.trim(),
+        phone: document.getElementById('flPhone').value.trim(),
+        area: document.getElementById('flArea').value,
+        role: document.getElementById('flRole').value.trim(),
+        fee: document.getElementById('flFee').value.trim(),
+        rating: '5.0 ★ (Mới lên sàn)'
+      };
+      freelancers.unshift(newFl);
+      localStorage.setItem('pitch_freelancers_v2', JSON.stringify(freelancers));
+      renderRingerMarketplace();
+      closeFreelancerModal();
+      e.target.reset();
+      alert('✅ Hồ sơ của bạn đã lên Sàn Lính Đánh Thuê! Các đội thiếu người sẽ liên hệ trực tiếp qua SĐT.');
+    }
+
+    function renderBookingList() {
+      const tbody = document.getElementById('bookingTableBody');
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const filterSport = document.getElementById('filterSport').value;
+      const filterStatus = document.getElementById('filterStatus').value;
+
+      const filtered = bookings.filter(b => {
+        const matchSearch = b.name.toLowerCase().includes(search) || b.phone.includes(search) || b.id.toLowerCase().includes(search);
+        const matchSport = filterSport === 'ALL' || b.sport === filterSport;
+        const matchStatus = filterStatus === 'ALL' || b.status === filterStatus;
+        return matchSearch && matchSport && matchStatus;
+      });
+
+      document.getElementById('countBadge').textContent = bookings.length;
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        document.getElementById('emptyState').classList.remove('hidden');
+        return;
+      }
+      document.getElementById('emptyState').classList.add('hidden');
+
+      filtered.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition';
+        const sportIcon = b.sport === 'football' ? '⚽' : b.sport === 'pickleball' ? '🏓' : '🏸';
+        const hasAiCam = b.services && b.services.some(s => s.includes('Camera Sân'));
+        tr.innerHTML = `
+          <td class="py-3.5 px-4 font-mono font-bold text-xs text-slate-500">${b.id}</td>
+          <td class="py-3.5 px-4">
+            <div class="font-bold text-slate-800 flex items-center gap-1 flex-wrap">
+              ${escapeHtml(b.name)} 
+              ${b.isRecurring ? `<span class="text-[10px] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded">Cố định (${b.recurringSessionIndex}/${b.recurringWeeks})</span>` : ''}
+              ${b.isRingerNeeded ? '<span class="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded">Thuê Người</span>' : ''}
+              ${b.isMatchmaking ? '<span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">Ghép Kèo</span>' : ''}
+              ${hasAiCam ? '<span class="text-[10px] bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded">Camera 4K</span>' : ''}
+            </div>
+            <div class="text-xs text-slate-400 font-mono">${b.phone}</div>
+          </td>
+          <td class="py-3.5 px-4">
+            <div class="font-bold text-slate-800">${sportIcon} ${escapeHtml(b.pitchName)}</div>
+            <div class="text-xs text-emerald-700 font-medium truncate max-w-[200px]">${escapeHtml(b.location)}</div>
+          </td>
+          <td class="py-3.5 px-4 text-xs">
+            <div class="font-bold text-slate-700">${b.date}</div>
+            <div class="text-emerald-600 font-bold">${b.time}</div>
+          </td>
+          <td class="py-3.5 px-4">
+            <div class="font-bold text-slate-800">${formatVND(b.total)}</div>
+            <div class="text-xs text-amber-600 font-medium">Cọc: ${formatVND(b.deposit)}</div>
+          </td>
+          <td class="py-3.5 px-4">
+            <button onclick="toggleStatus('${b.id}')" title="Bấm để đổi trạng thái" class="px-2.5 py-1 rounded-full text-xs font-bold transition shadow-sm ${b.status === 'Đã cọc' ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-amber-100 text-amber-800 hover:bg-amber-200'}">
+              ${b.status} <i class="fa-solid fa-arrows-rotate text-[10px] ml-1"></i>
+            </button>
+          </td>
+          <td class="py-3.5 px-4 text-center space-x-1 whitespace-nowrap">
+            <button onclick='openInvoiceModalById("${b.id}")' title="Xem Hóa Đơn, VietQR & Camera" class="p-1.5 text-slate-500 hover:text-emerald-600 transition">
+              <i class="fa-solid fa-qrcode text-base"></i>
+            </button>
+            <button onclick="deleteBooking('${b.id}')" title="Hủy lịch & Mở trống sân" class="p-1.5 text-slate-500 hover:text-red-600 transition">
+              <i class="fa-solid fa-trash text-base"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderMatchmakingList() {
+      const container = document.getElementById('matchmakingListGrid');
+      const matchBookings = bookings.filter(b => b.isMatchmaking);
+      document.getElementById('matchBadge').textContent = matchBookings.length;
+      container.innerHTML = '';
+
+      if (matchBookings.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 text-slate-400 space-y-2">
+            <i class="fa-solid fa-handshake-slash text-4xl"></i>
+            <p class="font-medium">Chưa có kèo giao lưu nào được đăng. Hãy tạo kèo mới ngay!</p>
+          </div>
+        `;
+        return;
+      }
+
+      matchBookings.forEach(b => {
+        const sportIcon = b.sport === 'football' ? '⚽ Bóng Đá' : b.sport === 'pickleball' ? '🏓 Pickleball' : '🏸 Cầu Lông';
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition space-y-3 flex flex-col justify-between';
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">${sportIcon}</span>
+              <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${b.matchSplitRatio || 'Chia 50-50'}</span>
+            </div>
+            <h3 class="font-bold text-slate-800 text-base">${escapeHtml(b.name)} cần tìm đối thủ</h3>
+            <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot text-emerald-600 mr-1"></i>${b.location}</p>
+            <p class="text-xs text-slate-500"><i class="fa-solid fa-clock text-emerald-600 mr-1"></i>${b.time} ngày <strong>${b.date}</strong> (${b.pitchName})</p>
+            
+            <div class="mt-3 p-2.5 bg-slate-50 rounded-xl text-xs space-y-1 border border-slate-100">
+              <p><strong class="text-slate-700">Trình độ:</strong> ${b.matchSkill || 'Tự do'}</p>
+              <p><strong class="text-slate-700">Ghi chú:</strong> ${escapeHtml(b.note) || 'Đến sân đúng giờ vui vẻ hòa đồng.'}</p>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t flex items-center justify-between">
+            <div class="text-xs font-mono font-bold text-slate-600">SĐT: ${b.phone}</div>
+            <a href="tel:${b.phone}" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs transition flex items-center gap-1">
+              <i class="fa-solid fa-phone"></i> Bắt Kèo Ngay
+            </a>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderHighlightsGrid() {
+      const grid = document.getElementById('highlightsGrid');
+      grid.innerHTML = '';
+
+      highlightClips.forEach(clip => {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-md transition flex flex-col justify-between';
+        card.innerHTML = `
+          <div>
+            <div class="relative aspect-video bg-slate-900 overflow-hidden group cursor-pointer" onclick="openVideoPlayer('${escapeHtml(clip.title)}', '${clip.pitch} • ${clip.triggerType}', '${clip.thumb}')">
+              <img src="${clip.thumb}" alt="${escapeHtml(clip.title)}" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition duration-500">
+              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30"></div>
+              <button class="absolute inset-0 m-auto w-12 h-12 bg-rose-600/90 group-hover:bg-rose-500 rounded-full flex items-center justify-center text-white text-lg shadow-lg transition transform group-hover:scale-110">
+                <i class="fa-solid fa-play ml-0.5"></i>
+              </button>
+              <span class="absolute top-2.5 left-2.5 bg-black/70 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur">
+                ${clip.sport}
+              </span>
+              <span class="absolute bottom-2.5 right-2.5 bg-black/80 text-white text-[10px] font-mono px-2 py-0.5 rounded">
+                ${clip.duration} • HD
+              </span>
+            </div>
+
+            <div class="p-4 space-y-2">
+              <div class="flex items-center justify-between text-[11px] text-slate-400">
+                <span><i class="fa-solid fa-scissors text-rose-500 mr-1"></i>${clip.triggerType}</span>
+                <span>${clip.timeAgo}</span>
+              </div>
+              <h3 class="font-bold text-slate-800 text-sm line-clamp-2">${escapeHtml(clip.title)}</h3>
+              <p class="text-xs text-emerald-700 font-medium"><i class="fa-solid fa-location-dot mr-1"></i>${clip.pitch} • <span class="text-slate-400">${clip.views} lượt xem</span></p>
+            </div>
+          </div>
+
+          <div class="px-4 pb-4 pt-2 border-t border-slate-100 flex gap-2">
+            <button onclick="downloadHighlight()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-download"></i> Tải về
+            </button>
+            <button onclick="shareClipText('${escapeHtml(clip.title)}', '${clip.pitch}')" class="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-share-nodes"></i> Chia sẻ
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    let currentPlayheadSeconds = 1455;
+
+    function formatMMSS(totalSec) {
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function populateCameraBookingSelect() {
+      const sel = document.getElementById('camBookingSelect');
+      if (!sel) return;
+      const currentVal = sel.value;
+      sel.innerHTML = '';
+      bookings.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = `[${b.id}] ${b.name} — ${b.pitchName} (${b.date} | ${b.time})`;
+        sel.appendChild(opt);
+      });
+      if (currentVal && bookings.some(b => b.id === currentVal)) {
+        sel.value = currentVal;
+      }
+      loadCameraSession();
+    }
+
+    function loadCameraSession() {
+      const sel = document.getElementById('camBookingSelect');
+      if (!sel || !sel.value) return;
+      const b = bookings.find(item => item.id === sel.value);
+      if (!b) return;
+      document.getElementById('camSessionMeta').textContent = `${b.pitchName} • ${b.date} (${b.time}) • Đội: ${b.name}`;
+      const feedImg = document.getElementById('camFeedImg');
+      if (b.sport === 'pickleball') {
+        feedImg.src = 'https://images.unsplash.com/photo-1599586120429-48281b6f0ece?w=1000&auto=format&fit=crop&q=80';
+      } else if (b.sport === 'badminton') {
+        feedImg.src = 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1000&auto=format&fit=crop&q=80';
+      } else {
+        feedImg.src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1000&auto=format&fit=crop&q=80';
+      }
+      updateTrimPreview();
+    }
+
+    function switchCamAngle(btn, label) {
+      document.getElementById('camAngleLabel').textContent = label;
+      document.querySelectorAll('.cam-angle-btn').forEach(el => {
+        el.className = 'cam-angle-btn px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 font-semibold transition';
+      });
+      btn.className = 'cam-angle-btn px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold transition';
+    }
+
+    function handleMatchScrub(val) {
+      currentPlayheadSeconds = parseInt(val) || 0;
+      const formatted = formatMMSS(currentPlayheadSeconds);
+      document.getElementById('currentPlayheadDisplay').textContent = formatted;
+      document.getElementById('scrubMinuteLabel').textContent = 'Phút ' + formatted;
+    }
+
+    function setTrimPointFromPlayhead(point) {
+      const m = Math.floor(currentPlayheadSeconds / 60);
+      const s = currentPlayheadSeconds % 60;
+      if (point === 'start') {
+        document.getElementById('trimStartMin').value = m;
+        document.getElementById('trimStartSec').value = s;
+      } else {
+        document.getElementById('trimEndMin').value = m;
+        document.getElementById('trimEndSec').value = s;
+      }
+      updateTrimPreview();
+    }
+
+    function updateTrimPreview() {
+      const sMin = parseInt(document.getElementById('trimStartMin').value) || 0;
+      const sSec = parseInt(document.getElementById('trimStartSec').value) || 0;
+      const eMin = parseInt(document.getElementById('trimEndMin').value) || 0;
+      const eSec = parseInt(document.getElementById('trimEndSec').value) || 0;
+
+      const startTotal = sMin * 60 + sSec;
+      const endTotal = eMin * 60 + eSec;
+      const diff = endTotal - startTotal;
+
+      const durEl = document.getElementById('trimDurationDisplay');
+      const rangeEl = document.getElementById('timelineRangeLabel');
+      const barEl = document.getElementById('trimHighlightBar');
+
+      rangeEl.textContent = `${formatMMSS(startTotal)} → ${formatMMSS(Math.max(startTotal, endTotal))}`;
+
+      if (diff <= 0) {
+        durEl.textContent = 'Không hợp lệ (End phải lớn hơn Start)';
+        durEl.className = 'font-mono text-xs text-red-600 font-bold';
+      } else {
+        durEl.textContent = `${diff} giây`;
+        durEl.className = 'font-mono text-sm text-emerald-700 font-bold';
+        const leftPct = Math.min(95, (startTotal / 5400) * 100);
+        const widthPct = Math.max(2, Math.min(100 - leftPct, (diff / 5400) * 100));
+        barEl.style.left = leftPct + '%';
+        barEl.style.width = widthPct + '%';
+      }
+    }
+
+    function exportCustomCutClip() {
+      const sMin = parseInt(document.getElementById('trimStartMin').value) || 0;
+      const sSec = parseInt(document.getElementById('trimStartSec').value) || 0;
+      const eMin = parseInt(document.getElementById('trimEndMin').value) || 0;
+      const eSec = parseInt(document.getElementById('trimEndSec').value) || 0;
+
+      const startTotal = sMin * 60 + sSec;
+      const endTotal = eMin * 60 + eSec;
+      const diff = endTotal - startTotal;
+
+      if (diff <= 0) {
+        alert('⚠️ Thời điểm Kết Thúc (End) phải lớn hơn thời điểm Bắt Đầu (Start)!');
+        return;
+      }
+
+      const sel = document.getElementById('camBookingSelect');
+      const b = bookings.find(item => item.id === sel.value) || bookings[0];
+      const titleInput = document.getElementById('customClipTitle').value.trim() || `Pha bóng tự cắt (${formatMMSS(startTotal)} - ${formatMMSS(endTotal)})`;
+      const ratio = document.getElementById('clipAspectRatio').value;
+      const sportIcon = b ? (b.sport === 'football' ? '⚽ Bóng Đá' : b.sport === 'pickleball' ? '🏓 Pickleball' : '🏸 Cầu Lông') : '⚽ Bóng Đá';
+
+      const newClip = {
+        id: 'CUT-' + Math.floor(200 + Math.random() * 800),
+        title: titleInput,
+        sport: sportIcon,
+        pitch: `${b ? b.pitchName : 'Sân 7A'} (${formatMMSS(startTotal)} → ${formatMMSS(endTotal)})`,
+        duration: formatMMSS(diff),
+        timeAgo: 'Vừa cắt xong',
+        views: 1,
+        thumb: document.getElementById('camFeedImg').src,
+        triggerType: `Người chơi tự cắt (${ratio})`
+      };
+
+      highlightClips.unshift(newClip);
+      renderHighlightsGrid();
+      alert(`✂️ ĐÃ CẮT VIDEO THÀNH CÔNG!\n\nĐoạn clip "${titleInput}" (${formatMMSS(startTotal)} → ${formatMMSS(endTotal)}, dài ${diff}s) đã được trích xuất từ Camera sân và lưu vào kho bên dưới!`);
+    }
+
+    function openCameraStudioForBooking() {
+      closeInvoiceModal();
+      switchTab('highlights');
+      if (currentSelectedBookingForInvoice) {
+        const sel = document.getElementById('camBookingSelect');
+        if (sel) {
+          sel.value = currentSelectedBookingForInvoice.id;
+          loadCameraSession();
+        }
+      }
+    }
+
+    function toggleStatus(id) {
+      const booking = bookings.find(b => b.id === id);
+      if (booking) {
+        booking.status = booking.status === 'Chờ cọc' ? 'Đã cọc' : 'Chờ cọc';
+        saveData();
+      }
+    }
+
+    function deleteBooking(id) {
+      if (confirm('Bạn có chắc chắn muốn hủy đơn đặt sân này? Khung giờ này sẽ được mở trống lại cho các đội khác!')) {
+        bookings = bookings.filter(b => b.id !== id);
+        saveData();
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem('pitch_bookings', JSON.stringify(bookings));
+      renderBookingList();
+      renderRingerMarketplace();
+      renderMatchmakingList();
+      populateCameraBookingSelect();
+      updateStats();
+      syncAvailabilityUI();
+    }
+
+    function updateStats() {
+      const totalBookings = bookings.length;
+      const totalRevenue = bookings.reduce((sum, b) => sum + b.total, 0);
+      const totalDeposit = bookings.reduce((sum, b) => sum + b.deposit, 0);
+
+      document.getElementById('statTotalBookings').textContent = totalBookings;
+      document.getElementById('statTotalRevenue').textContent = formatVND(totalRevenue);
+      document.getElementById('statTotalDeposit').textContent = formatVND(totalDeposit);
+
+      const sportCounts = { football: 0, pickleball: 0, badminton: 0 };
+      bookings.forEach(b => {
+        if (sportCounts[b.sport] !== undefined) sportCounts[b.sport]++;
+      });
+
+      const barContainer = document.getElementById('sportStatsBar');
+      barContainer.innerHTML = '';
+      
+      const sportsInfo = [
+        { key: 'football', name: 'Bóng Đá ⚽', color: 'bg-emerald-600' },
+        { key: 'pickleball', name: 'Pickleball 🏓', color: 'bg-sky-500' },
+        { key: 'badminton', name: 'Cầu Lông 🏸', color: 'bg-amber-500' }
+      ];
+
+      sportsInfo.forEach(s => {
+        const count = sportCounts[s.key];
+        const percent = totalBookings > 0 ? Math.round((count / totalBookings) * 100) : 0;
+        
+        const row = document.createElement('div');
+        row.className = 'space-y-1 text-xs font-semibold';
+        row.innerHTML = `
+          <div class="flex justify-between text-slate-700">
+            <span>${s.name}</span>
+            <span>${count} lượt (${percent}%)</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+            <div class="${s.color} h-2.5 rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+          </div>
+        `;
+        barContainer.appendChild(row);
+      });
+    }
+
+    function switchTab(tab) {
+      const tabs = ['booking', 'ringer', 'matchmaking', 'highlights', 'list', 'stats'];
+      tabs.forEach(t => {
+        const content = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        
+        if (t === tab) {
+          content.classList.remove('hidden');
+          btn.className = "px-3.5 py-2 rounded-lg transition-all bg-white text-emerald-800 shadow font-bold";
+        } else {
+          content.classList.add('hidden');
+          btn.className = "px-3.5 py-2 rounded-lg transition-all text-emerald-100 hover:text-white font-medium";
+        }
+      });
+      if (tab === 'booking') syncAvailabilityUI();
+    }
+
+    function openInvoiceModalById(id) {
+      const booking = bookings.find(b => b.id === id);
+      if (booking) openInvoiceModal(booking);
+    }
+
+    function openInvoiceModal(booking) {
+      currentSelectedBookingForInvoice = booking;
+      const sportName = SPORT_CONFIG[booking.sport]?.name || 'Thể thao';
+
+      document.getElementById('modalInvoiceId').textContent = booking.id;
+      document.getElementById('modalCustomer').textContent = booking.name;
+      document.getElementById('modalPhone').textContent = booking.phone;
+      document.getElementById('modalSport').textContent = sportName;
+      document.getElementById('modalLocation').textContent = booking.location;
+      document.getElementById('modalPitch').textContent = booking.pitchName;
+      document.getElementById('modalTime').textContent = booking.isRecurring 
+        ? `${booking.time} — ${getVietnameseWeekday(booking.date)} hàng tuần (${booking.recurringWeeks} buổi)`
+        : `${booking.time} (${booking.date})`;
+      document.getElementById('modalServices').textContent = booking.services.join(', ') || 'Không chọn';
+      const displayTotal = booking.isRecurring ? (booking.recurringGroupTotal || booking.total) : booking.total;
+      const displayDeposit = booking.isRecurring ? (booking.recurringGroupDeposit || booking.deposit) : booking.deposit;
+      document.getElementById('modalTotal').textContent = formatVND(displayTotal);
+      document.getElementById('modalDeposit').textContent = formatVND(displayDeposit);
+
+      if (booking.isRecurring && booking.recurringDatesList) {
+        document.getElementById('modalRecurringRow').classList.remove('hidden');
+        document.getElementById('modalRecurringInfo').textContent = `${booking.recurringWeeks} tuần: ${booking.recurringDatesList.join(', ')}`;
+      } else {
+        document.getElementById('modalRecurringRow').classList.add('hidden');
+      }
+
+      if (booking.isRingerNeeded) {
+        document.getElementById('modalRingerRow').classList.remove('hidden');
+        document.getElementById('modalRingerInfo').textContent = `${booking.ringerPosition} x${booking.ringerCount} (${booking.ringerPerk})`;
+      } else {
+        document.getElementById('modalRingerRow').classList.add('hidden');
+      }
+
+      if (booking.isMatchmaking) {
+        document.getElementById('modalMatchmakingRow').classList.remove('hidden');
+        document.getElementById('modalMatchmakingInfo').textContent = `${booking.matchSkill} (${booking.matchSplitRatio})`;
+      } else {
+        document.getElementById('modalMatchmakingRow').classList.add('hidden');
+      }
+
+      const bankId = 'MB';
+      const accountNo = '8888999901';
+      const accountName = 'NGUYEN MINH QUAN';
+      const amount = Math.round(displayDeposit);
+      const memo = `PITCH88 ${booking.id} ${booking.phone}`;
+
+      const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(accountName)}`;
+      
+      document.getElementById('modalQrCodeImg').src = qrUrl;
+      document.getElementById('modalQrMemo').textContent = memo;
+
+      const hasCamService = booking.services && booking.services.some(s => s.includes('Camera Sân'));
+      const hlBadge = document.getElementById('modalHighlightBadge');
+      const passEl = document.getElementById('modalCamPasscode');
+      if (passEl) passEl.textContent = 'CAM-' + booking.id.replace('PITCH-', '');
+      if (hasCamService) {
+        hlBadge.textContent = 'Đã mở khóa Full 4K';
+        hlBadge.className = 'text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full';
+      } else {
+        hlBadge.textContent = 'Quyền xem cơ bản';
+        hlBadge.className = 'text-[11px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full';
+      }
+
+      calculateSplitBill();
+      document.getElementById('invoiceModal').classList.remove('hidden');
+    }
+
+    function closeInvoiceModal() {
+      document.getElementById('invoiceModal').classList.add('hidden');
+    }
+
+    function openVideoPlayer(title, meta, imgUrl) {
+      document.getElementById('playerModalTitle').textContent = title;
+      document.getElementById('playerModalMeta').textContent = meta;
+      document.getElementById('playerModalImg').src = imgUrl;
+      document.getElementById('videoPlayerModal').classList.remove('hidden');
+    }
+
+    function closeVideoPlayer() {
+      document.getElementById('videoPlayerModal').classList.add('hidden');
+    }
+
+    function downloadHighlight() {
+      alert('📥 Đang tải xuống video Highlight Full HD 1080p (đã chèn tự động Logo PitchHub 88)...');
+    }
+
+    function shareToTikTok() {
+      const pitch = currentSelectedBookingForInvoice ? currentSelectedBookingForInvoice.pitchName : 'PitchHub 88';
+      const time = currentSelectedBookingForInvoice ? currentSelectedBookingForInvoice.time : '';
+      const shareText = `🔥 Highlight trận đấu tại ${pitch} (${time}) - Đặt sân & cắt clip trực tiếp từ Camera sân tại PitchHub 88! #PitchHub88 #BongDaPhui`;
+      
+      navigator.clipboard.writeText(shareText).then(() => {
+        alert('✅ Đã sao chép caption & link video Highlight! Dán ngay lên TikTok / Facebook Reels để khoe với anh em.');
+      });
+    }
+
+    function shareClipText(title, pitch) {
+      const shareText = `🔥 Xem ngay: ${title} tại ${pitch} - Cắt từ Camera sân PitchHub 88!`;
+      navigator.clipboard.writeText(shareText).then(() => {
+        alert('✅ Đã sao chép nội dung chia sẻ Highlight vào Clipboard!');
+      });
+    }
+
+    function calculateSplitBill() {
+      if (!currentSelectedBookingForInvoice) return;
+      const count = parseInt(document.getElementById('splitCountInput').value) || 1;
+      const total = currentSelectedBookingForInvoice.total;
+      const perPerson = Math.round(total / count);
+
+      document.getElementById('splitPerPerson').textContent = `${formatVND(perPerson)} / người (${count} người)`;
+    }
+
+    function copySplitBillLink() {
+      if (!currentSelectedBookingForInvoice) return;
+      const count = parseInt(document.getElementById('splitCountInput').value) || 1;
+      const perPerson = formatVND(Math.round(currentSelectedBookingForInvoice.total / count));
+      
+      const text = `⚽ KÈO ${currentSelectedBookingForInvoice.pitchName} (${currentSelectedBookingForInvoice.time})\n💰 Tổng tiền: ${formatVND(currentSelectedBookingForInvoice.total)}\n👉 Chia ${count} người: ${perPerson}/người.\n🏦 Chuyển khoản VietQR nội dung: ${currentSelectedBookingForInvoice.id}`;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        alert('✅ Đã sao chép nội dung đòi tiền chia sân vào Clipboard! Bạn có thể dán ngay vào Zalo/Messenger.');
+      });
+    }
+
+    function checkWeather() {
+      const states = [
+        { text: 'Thời tiết đẹp, trời mát mẻ thích hợp vận động!', sub: 'Mỹ Đình: 26°C • Độ ẩm 65% • Khô ráo 100%' },
+        { text: 'Dự báo có thể mưa rào nhẹ vào khung giờ tối!', sub: 'Được áp dụng chính sách Bảo hiểm mưa: Miễn phí đổi lịch 100%' }
+      ];
+      const randomState = states[Math.floor(Math.random() * states.length)];
+      document.getElementById('weatherText').textContent = randomState.text;
+      document.getElementById('weatherSub').textContent = randomState.sub;
+    }
+
+    function formatVND(amount) {
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+  </script>
+</body>
+</html>
